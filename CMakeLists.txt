@@ -1,6 +1,6 @@
 cmake_minimum_required ( VERSION 3.0.2 )
 
-project ( simple-gl-project )
+project ( DAT205_felixau )
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # For windows we use our bundled binaries.
