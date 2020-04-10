@@ -59,6 +59,11 @@ namespace architecture
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 		glBindVertexArray(vao);
+		GLint current_program = 0;
+
+		glGetIntegerv(GL_CURRENT_PROGRAM, &current_program);
+		glm::vec3 m_color(0.61, 0.56, 0.52);
+		glUniform3fv(glGetUniformLocation(current_program, "material_color"), 1, &m_color.x);
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	}
 }
