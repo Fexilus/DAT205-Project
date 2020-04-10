@@ -21,6 +21,8 @@ using namespace glm;
 #include "hdr.h"
 #include "fbo.h"
 
+#include <castle.h>
+
 using std::min;
 using std::max;
 
@@ -82,6 +84,11 @@ mat4 roomModelMatrix;
 mat4 landingPadModelMatrix;
 mat4 fighterModelMatrix;
 
+///////////////////////////////////////////////////////////////////////////////
+// Procedural generation
+///////////////////////////////////////////////////////////////////////////////
+architecture::Shape wall;
+
 void loadShaders(bool is_reload)
 {
 	GLuint shader = labhelper::loadShaderProgram("../project/simple.vert", "../project/simple.frag",
@@ -133,6 +140,13 @@ void initGL()
 
 	glEnable(GL_DEPTH_TEST); // enable Z-buffering
 	glEnable(GL_CULL_FACE);  // enables backface culling
+
+	///////////////////////////////////////////////////////////////////////
+	// Set up procedural generation
+	///////////////////////////////////////////////////////////////////////
+	wall.bounds[0] = vec2(0, 10);
+	wall.bounds[1] = vec2(0, 10);
+	wall.bounds[2] = vec2(0, 10);
 }
 
 void debugDrawLight(const glm::mat4& viewMatrix,
@@ -165,6 +179,7 @@ void drawScene(GLuint currentShaderProgram,
                const mat4& lightProjectionMatrix)
 {
 	glUseProgram(currentShaderProgram);
+	/*
 	// Light source
 	vec4 viewSpaceLightPosition = viewMatrix * vec4(lightPosition, 1.0f);
 	labhelper::setUniformSlow(currentShaderProgram, "point_light_color", point_light_color);
@@ -197,7 +212,17 @@ void drawScene(GLuint currentShaderProgram,
 	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
 	                          inverse(transpose(viewMatrix * fighterModelMatrix)));
 
-	labhelper::render(fighterModel);
+	labhelper::render(fighterModel);*/
+
+	// Castle
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
+		projectionMatrix * viewMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix", 
+		viewMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
+		inverse(transpose(viewMatrix)));
+
+	wall.render();
 }
 
 
@@ -247,9 +272,9 @@ void display(void)
 	glClearColor(0.2, 0.2, 0.8, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	drawBackground(viewMatrix, projMatrix);
+	//drawBackground(viewMatrix, projMatrix);
 	drawScene(shaderProgram, viewMatrix, projMatrix, lightViewMatrix, lightProjMatrix);
-	debugDrawLight(viewMatrix, projMatrix, vec3(lightPosition));
+	//debugDrawLight(viewMatrix, projMatrix, vec3(lightPosition));
 }
 
 bool handleEvents(void)
