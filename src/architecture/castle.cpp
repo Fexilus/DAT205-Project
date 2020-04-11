@@ -196,4 +196,14 @@ namespace architecture
 			children.push_back(new Shape(newBounds));
 		}
 	}
+
+	void Shape::boundsExpand(glm::vec2 boundExpansions[3])
+	{
+		bounds[0][0] -= boundExpansions[0][0];
+		bounds[0][1] += boundExpansions[0][1];
+		bounds[1][0] -= boundExpansions[1][0];
+		bounds[1][1] += boundExpansions[1][1];
+		bounds[2][0] -= boundExpansions[2][0];
+		bounds[2][1] += boundExpansions[2][1];
+	}
 }
