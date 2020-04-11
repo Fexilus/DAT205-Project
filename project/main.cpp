@@ -87,7 +87,7 @@ mat4 fighterModelMatrix;
 ///////////////////////////////////////////////////////////////////////////////
 // Procedural generation
 ///////////////////////////////////////////////////////////////////////////////
-architecture::Shape wall;
+architecture::Shape* wall = nullptr;
 
 void loadShaders(bool is_reload)
 {
@@ -144,10 +144,16 @@ void initGL()
 	///////////////////////////////////////////////////////////////////////
 	// Set up procedural generation
 	///////////////////////////////////////////////////////////////////////
-	wall.bounds[0] = vec2(0, 10);
-	wall.bounds[1] = vec2(0, 10);
-	wall.bounds[2] = vec2(0, 10);
-	wall.init();
+	vec2 wallBounds[3];
+	wallBounds[0] = vec2(0, 10);
+	wallBounds[1] = vec2(0, 10);
+	wallBounds[2] = vec2(0, 10);
+	wall = new architecture::Shape(wallBounds);
+
+	float split[] = { 0.25, 0.75 };
+	wall->subdivide(0, split, 2);
+
+	wall->init();
 }
 
 void debugDrawLight(const glm::mat4& viewMatrix,
@@ -225,7 +231,7 @@ void drawScene(GLuint currentShaderProgram,
 	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
 		inverse(transpose(viewMatrix)));
 
-	wall.render();
+	wall->render();
 }
 
 
