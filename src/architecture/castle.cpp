@@ -1,12 +1,9 @@
 #include "castle.h"
 
-#include <GL/glew.h>
-
 namespace architecture
 {
-	void Shape::render()
+	void Shape::init()
 	{
-		GLuint vao;
 		// Create a handle for the vertex array object
 		glGenVertexArrays(1, &vao);
 		// Set it as current, i.e., related calls will affect this object
@@ -123,7 +120,10 @@ namespace architecture
 		glGenBuffers(1, &indexBuffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	}
 
+	void Shape::render()
+	{
 		glBindVertexArray(vao);
 		GLint current_program = 0;
 

@@ -147,6 +147,7 @@ void initGL()
 	wall.bounds[0] = vec2(0, 10);
 	wall.bounds[1] = vec2(0, 10);
 	wall.bounds[2] = vec2(0, 10);
+	wall.init();
 }
 
 void debugDrawLight(const glm::mat4& viewMatrix,
