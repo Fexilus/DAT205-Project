@@ -145,13 +145,16 @@ void initGL()
 	// Set up procedural generation
 	///////////////////////////////////////////////////////////////////////
 	vec2 wallBounds[3];
-	wallBounds[0] = vec2(0, 10);
-	wallBounds[1] = vec2(0, 10);
-	wallBounds[2] = vec2(0, 10);
+	wallBounds[0] = vec2(-50, 50);
+	wallBounds[1] = vec2(0, 30);
+	wallBounds[2] = vec2(0, 5);
 	wall = new architecture::Shape(wallBounds);
 
-	float split[] = { 0.25, 0.75 };
-	wall->subdivide(0, split, 2);
+	architecture::SizePolicy splitPolicies[] = { architecture::SizePolicy::absolute, 
+												 architecture::SizePolicy::relative,
+												 architecture::SizePolicy::absolute };
+	float splitSizes[] = { 1, 1, 1 };
+	wall->subdivide(0, splitPolicies, splitSizes, 2);
 
 	wall->init();
 }

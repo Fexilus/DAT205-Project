@@ -162,25 +162,38 @@ namespace architecture
 		}
 	}
 
-	void Shape::subdivide(int axis, float splits[], size_t num_splits)
+	void Shape::subdivide(int axis, SizePolicy policy[], float sizeVal[], size_t numSubEl)
 	{
 		glm::vec2 newBounds[3];
 		newBounds[0] = bounds[0];
 		newBounds[1] = bounds[1];
 		newBounds[2] = bounds[2];
-		float splitDist = bounds[axis][1] - bounds[axis][0];
+		float parentSize = bounds[axis][1] - bounds[axis][0];
 
-		// Create children at splits
-		newBounds[axis] = bounds[axis][0] + splitDist * glm::vec2(0, splits[0]);
-		children.push_back(new Shape(newBounds));
-
-		for (int i = 1; i < num_splits; i++)
+		float absSum = 0;
+		float relSum = 0;
+		for (int i = 0; i < numSubEl; i++)
 		{
-			newBounds[axis] = bounds[axis][0] + splitDist * glm::vec2(splits[i - 1], splits[i]);
-			children.push_back(new Shape(newBounds));
+			if (policy[i] == SizePolicy::absolute) absSum += sizeVal[i];
+			else if (policy[i] == SizePolicy::relative) relSum += sizeVal[i];
 		}
 
-		newBounds[axis] = bounds[axis][0] + splitDist * glm::vec2(splits[num_splits-1], 1);
-		children.push_back(new Shape(newBounds));
+		// Scale factor for the relative size values
+		float relScale = (parentSize - absSum) / relSum;
+
+		newBounds[axis][1] = newBounds[axis][0];
+		for (int i = 0; i < numSubEl; i++)
+		{
+			if (policy[i] == SizePolicy::absolute)
+			{
+				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVal[i]);
+			}
+			else if (policy[i] == SizePolicy::relative)
+			{
+				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVal[i] * relScale);
+			}
+			
+			children.push_back(new Shape(newBounds));
+		}
 	}
 }
