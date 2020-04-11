@@ -162,7 +162,7 @@ namespace architecture
 		}
 	}
 
-	void Shape::subdivide(int axis, SizePolicy policy[], float sizeVal[], size_t numSubEl)
+	void Shape::subdivide(int axis, SizePolicy policies[], float sizeVals[], size_t numSubEl)
 	{
 		glm::vec2 newBounds[3];
 		newBounds[0] = bounds[0];
@@ -174,8 +174,8 @@ namespace architecture
 		float relSum = 0;
 		for (int i = 0; i < numSubEl; i++)
 		{
-			if (policy[i] == SizePolicy::absolute) absSum += sizeVal[i];
-			else if (policy[i] == SizePolicy::relative) relSum += sizeVal[i];
+			if (policies[i] == SizePolicy::absolute) absSum += sizeVals[i];
+			else if (policies[i] == SizePolicy::relative) relSum += sizeVals[i];
 		}
 
 		// Scale factor for the relative size values
@@ -184,16 +184,49 @@ namespace architecture
 		newBounds[axis][1] = newBounds[axis][0];
 		for (int i = 0; i < numSubEl; i++)
 		{
-			if (policy[i] == SizePolicy::absolute)
+			if (policies[i] == SizePolicy::absolute)
 			{
-				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVal[i]);
+				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVals[i]);
 			}
-			else if (policy[i] == SizePolicy::relative)
+			else if (policies[i] == SizePolicy::relative)
 			{
-				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVal[i] * relScale);
+				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVals[i] * relScale);
 			}
 			
 			children.push_back(new Shape(newBounds));
+		}
+	}
+
+	void Shape::repeat(int axis, SizePolicy policy, float sizeVal)
+	{
+		glm::vec2 newBounds[3];
+		newBounds[0] = bounds[0];
+		newBounds[1] = bounds[1];
+		newBounds[2] = bounds[2];
+		float parentSize = bounds[axis][1] - bounds[axis][0];
+
+		size_t numSubEl;
+		if (policy == SizePolicy::absolute)
+		{
+			numSubEl = (int)floor(parentSize / sizeVal);
+			newBounds[axis][1] = newBounds[axis][0];
+			for (int i = 0; i < numSubEl; i++)
+			{
+				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVal);
+
+				children.push_back(new Shape(newBounds));
+			}
+		}
+		else if (policy == SizePolicy::relative)
+		{
+			numSubEl = (int)floor(1.0f / sizeVal);
+			newBounds[axis][1] = newBounds[axis][0];
+			for (int i = 0; i < numSubEl; i++)
+			{
+				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVal * parentSize);
+
+				children.push_back(new Shape(newBounds));
+			}
 		}
 	}
 
