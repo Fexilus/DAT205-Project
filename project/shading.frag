@@ -49,6 +49,13 @@ uniform mat4 viewInverse;
 uniform vec3 viewSpaceLightPosition;
 
 ///////////////////////////////////////////////////////////////////////////////
+// SSAO
+///////////////////////////////////////////////////////////////////////////////
+uniform bool drawSsao;
+uniform bool useSsao;
+layout(binding = 3) uniform sampler2D ambientOcclusionMap;
+
+///////////////////////////////////////////////////////////////////////////////
 // Output color
 ///////////////////////////////////////////////////////////////////////////////
 layout(location = 0) out vec4 fragmentColor;
@@ -116,7 +123,20 @@ vec3 calculateIndirectIllumination(vec3 wo, vec3 n, vec3 base_color)
 	vec2 lookup = vec2(phi / (2.0 * PI), theta / PI);
 	vec4 irradiance = environment_multiplier * texture(irradianceMap, lookup);
 
-	vec3 diffuse_term = material_color * (1.0 / PI) * vec3(irradiance);
+	// Optionally add ambient occlusion
+	float ambientOcclusion;
+
+	if(useSsao) {
+		// Use ambient occlusion to get shadow values
+		vec2 screenCoord = gl_FragCoord.xy / textureSize(ambientOcclusionMap, 0);
+		ambientOcclusion = texture(ambientOcclusionMap, screenCoord).x;
+	}
+	else {
+		ambientOcclusion = 1.0;
+	}
+
+	// Calculate the diffuse reflection
+	vec3 diffuse_term = material_color * (1.0 / PI) * vec3(irradiance) * ambientOcclusion;
 
 	///////////////////////////////////////////////////////////////////////////
 	// Task 6 - Look up in the reflection map from the perfect specular
@@ -168,6 +188,15 @@ void main()
 	vec3 indirect_illumination_term = vec3(0.0);
 	{ // Indirect illumination
 		indirect_illumination_term = calculateIndirectIllumination(wo, n, base_color);
+	}
+
+	// Debug SSAO
+	if(drawSsao) {
+		// Use ambient occlusion to get shadow values
+		vec2 screenCoord = gl_FragCoord.xy / textureSize(ambientOcclusionMap, 0);
+		float ambientOcclusion = texture(ambientOcclusionMap, screenCoord).x;
+		fragmentColor = vec4(vec3(ambientOcclusion), 1.0);
+		return;
 	}
 
 	///////////////////////////////////////////////////////////////////////////

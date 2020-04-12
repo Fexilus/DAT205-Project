@@ -46,6 +46,8 @@ bool g_isMouseDragging = false;
 GLuint shaderProgram;       // Shader for rendering the final image
 GLuint simpleShaderProgram; // Shader used to draw the shadow map
 GLuint backgroundProgram;
+GLuint ssaoInputProgram; // Shader that calculates normals as color
+GLuint ssaoOutputProgram; // Shader that calculates the screen space ambient occlusion
 
 ///////////////////////////////////////////////////////////////////////////////
 // Environment
@@ -85,45 +87,90 @@ mat4 landingPadModelMatrix;
 mat4 fighterModelMatrix;
 
 ///////////////////////////////////////////////////////////////////////////////
+// SSAO parameters.
+///////////////////////////////////////////////////////////////////////////////
+FboInfo ssaoInputFB;
+FboInfo ssaoOutputFB;
+std::vector<vec3> ssaoHemisphereSamples;
+GLuint ssaoRotationTexture;
+
+int numberOfSsaoSamples = 32;
+const int ssaoRotationTextureSize = 4;
+bool useSsaoRotation = true;
+
+bool drawSsao = false;
+bool useSsao = true;
+float ssaoRadius = 3.5;
+
+///////////////////////////////////////////////////////////////////////////////
 // Procedural generation
 ///////////////////////////////////////////////////////////////////////////////
 architecture::Shape* wall = nullptr;
 
 void loadShaders(bool is_reload)
 {
-	GLuint shader = labhelper::loadShaderProgram("../project/simple.vert", "../project/simple.frag",
-	                                             is_reload);
-	if(shader != 0)
-		simpleShaderProgram = shader;
-	shader = labhelper::loadShaderProgram("../project/background.vert", "../project/background.frag",
-	                                      is_reload);
-	if(shader != 0)
-		backgroundProgram = shader;
+	GLuint shader = labhelper::loadShaderProgram("../project/simple.vert", "../project/simple.frag", is_reload);
+	if(shader != 0) simpleShaderProgram = shader;
+	shader = labhelper::loadShaderProgram("../project/background.vert", "../project/background.frag", is_reload);
+	if(shader != 0) backgroundProgram = shader;
 	shader = labhelper::loadShaderProgram("../project/shading.vert", "../project/shading.frag", is_reload);
-	if(shader != 0)
-		shaderProgram = shader;
+	if(shader != 0) shaderProgram = shader;
+	shader = labhelper::loadShaderProgram("../project/ssaoInput.vert", "../project/ssaoInput.frag", is_reload);
+	if (shader != 0) ssaoInputProgram = shader;
+	shader = labhelper::loadShaderProgram("../project/ssaoOutput.vert", "../project/ssaoOutput.frag", is_reload);
+	if (shader != 0) ssaoOutputProgram = shader;
+}
+
+void initSsaoSamples()
+{
+	ssaoHemisphereSamples.resize(numberOfSsaoSamples);
+	for (int i = 0; i < numberOfSsaoSamples; i++) {
+		ssaoHemisphereSamples[i] = labhelper::cosineSampleHemisphere();
+		ssaoHemisphereSamples[i] *= labhelper::randf();
+	}
 }
 
 void initGL()
 {
 	///////////////////////////////////////////////////////////////////////
-	//		Load Shaders
+	// Load Shaders
 	///////////////////////////////////////////////////////////////////////
-	backgroundProgram = labhelper::loadShaderProgram("../project/background.vert",
-	                                                 "../project/background.frag");
-	shaderProgram = labhelper::loadShaderProgram("../project/shading.vert", "../project/shading.frag");
-	simpleShaderProgram = labhelper::loadShaderProgram("../project/simple.vert", "../project/simple.frag");
+	loadShaders(false);
+
+	///////////////////////////////////////////////////////////////////////
+	// Load SSAO components
+	///////////////////////////////////////////////////////////////////////
+	initSsaoSamples();
+
+	// Create rotation texture
+	float rotations[ssaoRotationTextureSize * ssaoRotationTextureSize * 3];
+	for (int i = 0; i < ssaoRotationTextureSize * ssaoRotationTextureSize * 3; i += 3) {
+		rotations[i] = rotations[i + 1] = rotations[i + 2] = labhelper::randf();
+	}
+
+	glGenTextures(1, &ssaoRotationTexture);
+	glBindTexture(GL_TEXTURE_2D, ssaoRotationTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, ssaoRotationTextureSize, ssaoRotationTextureSize, 0, GL_RGB, GL_FLOAT, rotations);
+
+	// Set up ssao framebuffers
+	SDL_GetWindowSize(g_window, &windowWidth, &windowHeight);
+	ssaoInputFB.resize(windowWidth, windowHeight);
+	ssaoOutputFB.resize(windowWidth, windowHeight);
 
 	///////////////////////////////////////////////////////////////////////
 	// Load models and set up model matrices
 	///////////////////////////////////////////////////////////////////////
-	fighterModel = labhelper::loadModelFromOBJ("../scenes/NewShip.obj");
-	landingpadModel = labhelper::loadModelFromOBJ("../scenes/landingpad.obj");
-	sphereModel = labhelper::loadModelFromOBJ("../scenes/sphere.obj");
-
-	roomModelMatrix = mat4(1.0f);
-	fighterModelMatrix = translate(15.0f * worldUp);
-	landingPadModelMatrix = mat4(1.0f);
+	//fighterModel = labhelper::loadModelFromOBJ("../scenes/NewShip.obj");
+	//landingpadModel = labhelper::loadModelFromOBJ("../scenes/landingpad.obj");
+	//sphereModel = labhelper::loadModelFromOBJ("../scenes/sphere.obj");
+	//
+	//roomModelMatrix = mat4(1.0f);
+	//fighterModelMatrix = translate(15.0f * worldUp);
+	//landingPadModelMatrix = mat4(1.0f);
 
 	///////////////////////////////////////////////////////////////////////
 	// Load environment map
@@ -263,6 +310,7 @@ void display(void)
 	// setup matrices
 	///////////////////////////////////////////////////////////////////////////
 	mat4 projMatrix = perspective(radians(45.0f), float(windowWidth) / float(windowHeight), 5.0f, 2000.0f);
+	mat4 inverseProjMatrix = inverse(projMatrix);
 	mat4 viewMatrix = lookAt(cameraPosition, cameraPosition + cameraDirection, worldUp);
 
 	vec4 lightStartPosition = vec4(40.0f, 40.0f, 0.0f, 1.0f);
@@ -281,10 +329,66 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, reflectionMap);
 	glActiveTexture(GL_TEXTURE0);
 
+	if (useSsao | drawSsao)
+	{
+		///////////////////////////////////////////////////////////////////////////
+		// First SSAO render
+		///////////////////////////////////////////////////////////////////////////
+		glBindFramebuffer(GL_FRAMEBUFFER, ssaoInputFB.framebufferId);
+		glViewport(0, 0, windowWidth, windowHeight);
+		glClearColor(0.0, 0.0, 0.0, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glDepthRangef(0, 1);
+
+		// Draw scene to the pre-process framebuffer
+		drawScene(ssaoInputProgram, viewMatrix, projMatrix, lightViewMatrix, lightProjMatrix);
+
+		///////////////////////////////////////////////////////////////////////////
+		// Second SSAO render
+		///////////////////////////////////////////////////////////////////////////
+		glBindFramebuffer(GL_FRAMEBUFFER, ssaoOutputFB.framebufferId);
+		glViewport(0, 0, windowWidth, windowHeight);
+		glClearColor(0.0, 0.0, 0.0, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glUseProgram(ssaoOutputProgram);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, ssaoInputFB.colorTextureTargets[0]);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, ssaoInputFB.depthBuffer);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, ssaoRotationTexture);
+
+		glUniform3fv(glGetUniformLocation(ssaoOutputProgram, "hemisphereSamples"), numberOfSsaoSamples, &ssaoHemisphereSamples[0].x);
+		glUniform1i(glGetUniformLocation(ssaoOutputProgram, "numberOfSamples"), numberOfSsaoSamples); //Removed as Shader Storage Buffer Object is needed
+		glUniform1f(glGetUniformLocation(ssaoOutputProgram, "ssaoRadius"), ssaoRadius);
+		glUniform1i(glGetUniformLocation(ssaoOutputProgram, "useRotation"), useSsaoRotation);
+
+		glUniformMatrix4fv(glGetUniformLocation(ssaoOutputProgram, "projectionMatrix"), 1, false, &projMatrix[0].x);
+		glUniformMatrix4fv(glGetUniformLocation(ssaoOutputProgram, "inverseProjectionMatrix"), 1, false, &inverseProjMatrix[0].x);
+
+		labhelper::drawFullScreenQuad();
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	// Draw from camera
 	///////////////////////////////////////////////////////////////////////////
+
+	if (useSsao | drawSsao)
+	{
+		// Bind the ssao buffer
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, ssaoOutputFB.colorTextureTargets[0]);
+	}
+
+	glUseProgram(shaderProgram);
+	glUniform1i(glGetUniformLocation(shaderProgram, "drawSsao"), drawSsao);
+	glUniform1i(glGetUniformLocation(shaderProgram, "useSsao"), useSsao);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, windowWidth, windowHeight);
 	glClearColor(0.2, 0.2, 0.8, 1.0);
@@ -376,6 +480,19 @@ void gui()
 {
 	// Inform imgui of new frame
 	ImGui_ImplSdlGL3_NewFrame(g_window);
+
+	// SSAO options
+	ImGui::Checkbox("Use SSAO", &useSsao);
+	ImGui::Checkbox("Draw SSAO", &drawSsao);
+	ImGui::SliderFloat("SSAO radius", &ssaoRadius, 0, 10);
+	if (ImGui::SliderInt("Number of SSAO samples", &numberOfSsaoSamples, 1, 64))
+		initSsaoSamples();
+	ImGui::Checkbox("Use rotation texture", &useSsaoRotation);
+
+	// Reload shaders
+	if (ImGui::Button("Reload Shaders")) {
+		loadShaders(true);
+	}
 
 	// ----------------- Set variables --------------------------
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
