@@ -48,6 +48,7 @@ GLuint simpleShaderProgram; // Shader used to draw the shadow map
 GLuint backgroundProgram;
 GLuint ssaoInputProgram; // Shader that calculates normals as color
 GLuint ssaoOutputProgram; // Shader that calculates the screen space ambient occlusion
+GLuint ssaoBlurProgram; // Shader that blurs the screen space ambient occlusion
 
 ///////////////////////////////////////////////////////////////////////////////
 // Environment
@@ -91,6 +92,7 @@ mat4 fighterModelMatrix;
 ///////////////////////////////////////////////////////////////////////////////
 FboInfo ssaoInputFB;
 FboInfo ssaoOutputFB;
+FboInfo ssaoBlurFB;
 std::vector<vec3> ssaoHemisphereSamples;
 GLuint ssaoRotationTexture;
 
@@ -100,7 +102,7 @@ bool useSsaoRotation = true;
 
 bool drawSsao = false;
 bool useSsao = true;
-float ssaoRadius = 3.5;
+float ssaoRadius = 3.0f;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Procedural generation
@@ -119,6 +121,8 @@ void loadShaders(bool is_reload)
 	if (shader != 0) ssaoInputProgram = shader;
 	shader = labhelper::loadShaderProgram("../project/ssaoOutput.vert", "../project/ssaoOutput.frag", is_reload);
 	if (shader != 0) ssaoOutputProgram = shader;
+	shader = labhelper::loadShaderProgram("../project/ssaoOutput.vert", "../project/ssaoBlur.frag", is_reload);
+	if (shader != 0) ssaoBlurProgram = shader;
 }
 
 void initSsaoSamples()
@@ -160,6 +164,7 @@ void initGL()
 	SDL_GetWindowSize(g_window, &windowWidth, &windowHeight);
 	ssaoInputFB.resize(windowWidth, windowHeight);
 	ssaoOutputFB.resize(windowWidth, windowHeight);
+	ssaoBlurFB.resize(windowWidth, windowHeight);
 
 	///////////////////////////////////////////////////////////////////////
 	// Load models and set up model matrices
@@ -372,6 +377,23 @@ void display(void)
 		glUniformMatrix4fv(glGetUniformLocation(ssaoOutputProgram, "inverseProjectionMatrix"), 1, false, &inverseProjMatrix[0].x);
 
 		labhelper::drawFullScreenQuad();
+
+		///////////////////////////////////////////////////////////////////////////
+		// SSAO blur
+		///////////////////////////////////////////////////////////////////////////
+		glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFB.framebufferId);
+		glViewport(0, 0, windowWidth, windowHeight);
+		glClearColor(0.0, 0.0, 0.0, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glUseProgram(ssaoBlurProgram);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, ssaoOutputFB.colorTextureTargets[0]);
+
+		glUniform1i(glGetUniformLocation(ssaoBlurProgram, "rotationTextureSize"), ssaoRotationTextureSize);
+
+		labhelper::drawFullScreenQuad();
 	}
 
 	///////////////////////////////////////////////////////////////////////////
@@ -382,7 +404,7 @@ void display(void)
 	{
 		// Bind the ssao buffer
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, ssaoOutputFB.colorTextureTargets[0]);
+		glBindTexture(GL_TEXTURE_2D, ssaoBlurFB.colorTextureTargets[0]);
 	}
 
 	glUseProgram(shaderProgram);
