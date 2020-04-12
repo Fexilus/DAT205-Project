@@ -97,7 +97,7 @@ std::vector<vec3> ssaoHemisphereSamples;
 GLuint ssaoRotationTexture;
 
 int numberOfSsaoSamples = 32;
-const int ssaoRotationTextureSize = 4;
+const int ssaoRotationTextureSize = 8;
 bool useSsaoRotation = true;
 
 bool drawSsao = false;
@@ -308,6 +308,9 @@ void display(void)
 		{
 			windowWidth = w;
 			windowHeight = h;
+			ssaoInputFB.resize(windowWidth, windowHeight);
+			ssaoOutputFB.resize(windowWidth, windowHeight);
+			ssaoBlurFB.resize(windowWidth, windowHeight);
 		}
 	}
 

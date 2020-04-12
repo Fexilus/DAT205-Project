@@ -25,5 +25,5 @@ void main() {
         }
     }
 
-    fragmentColor = result / (4.0 * 4.0);
+    fragmentColor = result / float(rotationTextureSize * rotationTextureSize);
 }  
