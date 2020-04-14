@@ -134,6 +134,30 @@ void initSsaoSamples()
 	}
 }
 
+void generateGeometry()
+{
+	vec3 wallCoordSys[3] = { vec3(0,0,1), vec3(0,1,0) , vec3(-1,0,0) };
+	vec2 wallBounds[3] = { vec2(-50, 50), vec2(0, 30), vec2(0, 5) };
+	wall = new architecture::Shape(wallCoordSys, wallBounds);
+
+	wall->repeat(0, architecture::SizePolicy::absolute, 10);
+
+	architecture::SizePolicy splitPolicies[] = { architecture::SizePolicy::relative,
+												  architecture::SizePolicy::absolute,
+												  architecture::SizePolicy::relative };
+	vec2 expansion[3] = { vec2(0), vec2(0), vec2(2) };
+	float splitSizes1[] = { 1, 8, 1 };
+	float splitSizes2[] = { 1, 15, 1 };
+	for (architecture::Shape* child : wall->children)
+	{
+		child->subdivide(0, splitPolicies, splitSizes1, 3);
+		child->children[1]->subdivide(1, splitPolicies, splitSizes2, 3);
+		child->children[1]->children[1]->boundsExpand(expansion);
+	}
+
+	wall->init();
+}
+
 void initGL()
 {
 	///////////////////////////////////////////////////////////////////////
@@ -196,25 +220,7 @@ void initGL()
 	///////////////////////////////////////////////////////////////////////
 	// Set up procedural generation
 	///////////////////////////////////////////////////////////////////////
-	vec2 wallBounds[3] = { vec2(-50, 50), vec2(0, 30), vec2(0, 5) };
-	wall = new architecture::Shape(wallBounds);
-
-	wall->repeat(0, architecture::SizePolicy::absolute, 10);
-
-	architecture::SizePolicy splitPolicies[] = { architecture::SizePolicy::relative,
-												  architecture::SizePolicy::absolute,
-												  architecture::SizePolicy::relative };
-	vec2 expansion[3] = { vec2(0), vec2(0), vec2(2) };
-	float splitSizes1[] = { 1, 8, 1 };
-	float splitSizes2[] = { 1, 15, 1 };
-	for (architecture::Shape* child : wall->children)
-	{
-		child->subdivide(0, splitPolicies, splitSizes1, 3);
-		child->children[1]->subdivide(1, splitPolicies, splitSizes2, 3);
-		child->children[1]->children[1]->boundsExpand(expansion);
-	}
-
-	wall->init();
+	generateGeometry();
 }
 
 void debugDrawLight(const glm::mat4& viewMatrix,

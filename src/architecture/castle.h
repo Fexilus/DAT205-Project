@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+//#include <unordered_map>
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
@@ -9,10 +10,13 @@ namespace architecture
 {
 	enum class SizePolicy { absolute, relative };
 
+
 	class Shape
 	{
 	public:
-		// The bounds of the shape in the 3 (for now unmodifiable) coordinates
+		// The basis vectors of the shapes coordinate system in model space
+		glm::vec3 coordSys[3];
+		// The min and max bounds of the shape in the shape's coordinate system
 		glm::vec2 bounds[3];
 		// Child shapes
 		std::vector<Shape*> children;
@@ -23,7 +27,7 @@ namespace architecture
 
 	public:
 
-		Shape(glm::vec2 bounds_[3]);
+		Shape(glm::vec3 coordSys[3], glm::vec2 bounds[3]);
 
 		void init();
 		void render();

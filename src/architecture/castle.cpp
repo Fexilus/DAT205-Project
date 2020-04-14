@@ -2,8 +2,11 @@
 
 namespace architecture
 {
-	Shape::Shape(glm::vec2 bounds_[3])
+	Shape::Shape(glm::vec3 coordSys_[3], glm::vec2 bounds_[3])
 	{
+		coordSys[0] = coordSys_[0];
+		coordSys[1] = coordSys_[1];
+		coordSys[2] = coordSys_[2];
 		bounds[0] = bounds_[0];
 		bounds[1] = bounds_[1];
 		bounds[2] = bounds_[2];
@@ -25,73 +28,73 @@ namespace architecture
 			// Set it as current, i.e., related calls will affect this object
 			glBindVertexArray(vao);
 
+			glm::mat3 coordMatrix(coordSys[0], coordSys[1], coordSys[2]);
 
 			// Define vertecies of bounding box
-			// TODO: Do not redo this all the time
-			const float positions[] = {
+			const glm::vec3 positions[] = {
 				// X		     Y             Z
-				bounds[0][0], bounds[1][0], bounds[2][0],
-				bounds[0][0], bounds[1][0], bounds[2][1],
-				bounds[0][0], bounds[1][1], bounds[2][0],
-				bounds[0][0], bounds[1][1], bounds[2][1],
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
 
-				bounds[0][1], bounds[1][0], bounds[2][0],
-				bounds[0][1], bounds[1][1], bounds[2][0],
-				bounds[0][1], bounds[1][0], bounds[2][1],
-				bounds[0][1], bounds[1][1], bounds[2][1],
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
 
-				bounds[0][0], bounds[1][0], bounds[2][0],
-				bounds[0][1], bounds[1][0], bounds[2][0],
-				bounds[0][0], bounds[1][0], bounds[2][1],
-				bounds[0][1], bounds[1][0], bounds[2][1],
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
 
-				bounds[0][0], bounds[1][1], bounds[2][0],
-				bounds[0][0], bounds[1][1], bounds[2][1],
-				bounds[0][1], bounds[1][1], bounds[2][0],
-				bounds[0][1], bounds[1][1], bounds[2][1],
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
 
-				bounds[0][0], bounds[1][0], bounds[2][0],
-				bounds[0][0], bounds[1][1], bounds[2][0],
-				bounds[0][1], bounds[1][0], bounds[2][0],
-				bounds[0][1], bounds[1][1], bounds[2][0],
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
 
-				bounds[0][0], bounds[1][0], bounds[2][1],
-				bounds[0][1], bounds[1][0], bounds[2][1],
-				bounds[0][0], bounds[1][1], bounds[2][1],
-				bounds[0][1], bounds[1][1], bounds[2][1],
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
+				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
+				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
 			};
 
 			// Define normals
-			const float normals[] = {
-				-1,  0,  0,
-				-1,  0,  0,
-				-1,  0,  0,
-				-1,  0,  0,
+			const glm::vec3 normals[] = {
+				coordMatrix * glm::vec3(-1,  0,  0),
+				coordMatrix * glm::vec3(-1,  0,  0),
+				coordMatrix * glm::vec3(-1,  0,  0),
+				coordMatrix * glm::vec3(-1,  0,  0),
 
-				 1,  0,  0,
-				 1,  0,  0,
-				 1,  0,  0,
-				 1,  0,  0,
+				coordMatrix * glm::vec3( 1,  0,  0),
+				coordMatrix * glm::vec3( 1,  0,  0),
+				coordMatrix * glm::vec3( 1,  0,  0),
+				coordMatrix * glm::vec3( 1,  0,  0),
 
-				 0, -1,  0,
-				 0, -1,  0,
-				 0, -1,  0,
-				 0, -1,  0,
+				coordMatrix * glm::vec3( 0, -1,  0),
+				coordMatrix * glm::vec3( 0, -1,  0),
+				coordMatrix * glm::vec3( 0, -1,  0),
+				coordMatrix * glm::vec3( 0, -1,  0),
 
-				 0,  1,  0,
-				 0,  1,  0,
-				 0,  1,  0,
-				 0,  1,  0,
+				coordMatrix * glm::vec3( 0,  1,  0),
+				coordMatrix * glm::vec3( 0,  1,  0),
+				coordMatrix * glm::vec3( 0,  1,  0),
+				coordMatrix * glm::vec3( 0,  1,  0),
 
-				 0,  0, -1,
-				 0,  0, -1,
-				 0,  0, -1,
-				 0,  0, -1,
+				coordMatrix * glm::vec3( 0,  0, -1),
+				coordMatrix * glm::vec3( 0,  0, -1),
+				coordMatrix * glm::vec3( 0,  0, -1),
+				coordMatrix * glm::vec3( 0,  0, -1),
 
-				 0,  0,  1,
-				 0,  0,  1,
-				 0,  0,  1,
-				 0,  0,  1,
+				coordMatrix * glm::vec3( 0,  0,  1),
+				coordMatrix * glm::vec3( 0,  0,  1),
+				coordMatrix * glm::vec3( 0,  0,  1),
+				coordMatrix * glm::vec3( 0,  0,  1),
 			};
 
 			//Define the corresponding indicies
@@ -193,7 +196,7 @@ namespace architecture
 				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVals[i] * relScale);
 			}
 			
-			children.push_back(new Shape(newBounds));
+			children.push_back(new Shape(coordSys, newBounds));
 		}
 	}
 
@@ -214,7 +217,7 @@ namespace architecture
 			{
 				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVal);
 
-				children.push_back(new Shape(newBounds));
+				children.push_back(new Shape(coordSys, newBounds));
 			}
 		}
 		else if (policy == SizePolicy::relative)
@@ -225,7 +228,7 @@ namespace architecture
 			{
 				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVal * parentSize);
 
-				children.push_back(new Shape(newBounds));
+				children.push_back(new Shape(coordSys, newBounds));
 			}
 		}
 	}
