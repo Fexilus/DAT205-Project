@@ -8,6 +8,8 @@ find_package ( GLEW REQUIRED )
 add_library ( architecture 
     castle.h
     castle.cpp
+	shape.h
+	shape.cpp
     )
 
 target_include_directories( architecture
