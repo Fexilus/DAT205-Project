@@ -1,4 +1,4 @@
-cmake_minimum_required ( VERSION 3.0.2 )
+cmake_minimum_required ( VERSION 3.8.2 )
 
 project ( DAT205_felixau )
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -31,7 +31,9 @@ endmacro(config_build_output)
 add_definitions(-DGLM_ENABLE_EXPERIMENTAL)
 set ( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 set ( CMAKE_BUILD_TYPE DEBUG )
-add_definitions ( -std=c++11 )
+cmake_policy(SET CMP0067 NEW)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory ( labhelper )
 add_subdirectory ( project )
