@@ -8,14 +8,22 @@
 
 namespace architecture
 {
-	enum class SizePolicy { absolute, relative };
+	enum class CoordSysType { cartesian };
 
+	struct CoordSys
+	{
+		CoordSysType type;
+		glm::vec3 origin;
+		glm::vec3 bases[3];
+	};
+
+	enum class SizePolicy { absolute, relative };
 
 	class Shape
 	{
 	public:
 		// The basis vectors of the shapes coordinate system in model space
-		glm::vec3 coordSys[3];
+		CoordSys coordSys;
 		// The min and max bounds of the shape in the shape's coordinate system
 		glm::vec2 bounds[3];
 		// Child shapes
@@ -27,7 +35,7 @@ namespace architecture
 
 	public:
 
-		Shape(glm::vec3 coordSys[3], glm::vec2 bounds[3]);
+		Shape(CoordSys coordSys, glm::vec2 bounds[3]);
 
 		void init();
 		void render();

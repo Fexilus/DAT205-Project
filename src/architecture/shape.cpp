@@ -2,11 +2,8 @@
 
 namespace architecture
 {
-	Shape::Shape(glm::vec3 coordSys_[3], glm::vec2 bounds_[3])
+	Shape::Shape(CoordSys coordSys, glm::vec2 bounds_[3]) : coordSys(coordSys)
 	{
-		coordSys[0] = coordSys_[0];
-		coordSys[1] = coordSys_[1];
-		coordSys[2] = coordSys_[2];
 		bounds[0] = bounds_[0];
 		bounds[1] = bounds_[1];
 		bounds[2] = bounds_[2];
@@ -28,40 +25,40 @@ namespace architecture
 			// Set it as current, i.e., related calls will affect this object
 			glBindVertexArray(vao);
 
-			glm::mat3 coordMatrix(coordSys[0], coordSys[1], coordSys[2]);
+			glm::mat3 coordMatrix(coordSys.bases[0], coordSys.bases[1], coordSys.bases[2]);
 
 			// Define vertecies of bounding box
 			const glm::vec3 positions[] = {
 				// X		     Y             Z
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
 
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
 
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
 
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
 
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
 
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
-				coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
-				coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
+				coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
 			};
 
 			// Define normals

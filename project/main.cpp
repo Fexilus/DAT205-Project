@@ -136,7 +136,7 @@ void initSsaoSamples()
 
 void generateGeometry()
 {
-	vec3 wallNodes[3] = { vec3(0,0,0), vec3(130,0,30) };
+	vec3 wallNodes[3] = { vec3(-80,0,0), vec3(130,0,30) };
 	wall = architecture::makeWalls(wallNodes, 2);
 
 	architecture::castleWindows(wall);

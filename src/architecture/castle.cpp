@@ -10,7 +10,6 @@ namespace architecture
 	{
 		/* Make walls from a series of nodes. Only generates one wall at the moment */
 		// TODO: Handle multiple walls
-		// TODO: Handle translation of wall
 		float wallHeight = 30;
 		float wallDepth = 10;
 
@@ -23,7 +22,7 @@ namespace architecture
 			glm::vec3 xDir = glm::normalize(nodes[i + 1] - nodes[i]);
 			glm::vec3 zDir = glm::cross(xDir, upDir);
 
-			glm::vec3 wallCoordSys[3] = { xDir, upDir, zDir };
+			CoordSys wallCoordSys = { CoordSysType::cartesian, nodes[i], { xDir, upDir, zDir } };
 
 			glm::vec2 wallBounds[3] = { glm::vec2(0, glm::length(nodes[i + 1] - nodes[i])), 
 				                        glm::vec2(0, wallHeight),
