@@ -42,6 +42,7 @@ namespace architecture
 
 		// Operators
 		void subdivide(int axis, SizePolicy policies[], float sizeVals[], size_t numSubEl);
+		void subdivide(int axis, SizePolicy policies[], float sizeVals[], size_t numSubEl, int mask[]);
 		void repeat(int axis, SizePolicy policy, float sizeVal);
 		void boundsExpand(glm::vec2 boundExpansions[3]);
 	};

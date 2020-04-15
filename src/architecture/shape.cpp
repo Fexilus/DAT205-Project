@@ -1,4 +1,4 @@
-#include "castle.h"
+#include "castle.h"	
 
 namespace architecture
 {
@@ -164,6 +164,13 @@ namespace architecture
 
 	void Shape::subdivide(int axis, SizePolicy policies[], float sizeVals[], size_t numSubEl)
 	{
+		std::vector<int> mask(numSubEl, 1);
+		subdivide(axis, policies, sizeVals, numSubEl, mask.data());
+	}
+
+	// Subdivision where subshapes can me masked away
+	void Shape::subdivide(int axis, SizePolicy policies[], float sizeVals[], size_t numSubEl, int mask[])
+	{
 		glm::vec2 newBounds[3];
 		newBounds[0] = bounds[0];
 		newBounds[1] = bounds[1];
@@ -192,8 +199,8 @@ namespace architecture
 			{
 				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVals[i] * relScale);
 			}
-			
-			children.push_back(new Shape(coordSys, newBounds));
+
+			if (mask[i]) children.push_back(new Shape(coordSys, newBounds));
 		}
 	}
 

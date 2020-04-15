@@ -42,18 +42,17 @@ namespace architecture
 									   SizePolicy::relative };
 		float splitSizesOuterWidth[] = { 1, 4, 1 };
 		float splitSizesOuterHeight[] = { 1.5, 10, 1 };
-		glm::vec2 frameExpansion[3] = { glm::vec2(2), glm::vec2(0), glm::vec2(0) };
+		glm::vec2 frameExpansion[3] = { glm::vec2(1), glm::vec2(0), glm::vec2(0) };
 		float splitSizesInnerWidth[] = { 1, 2, 1 };
 		float splitSizesInnerHeight[] = { 1.5, 8, 1 };
-		glm::vec2 openingExpansion[3] = { glm::vec2(-(wall->bounds[0][1] - wall->bounds[0][0]) / 2.0f), glm::vec2(0), glm::vec2(0) };
+		int windowMask[] = { 1, 0, 1 };
 		for (architecture::Shape* child : wall->children)
 		{
 			child->subdivide(1, splitPolicies, splitSizesOuterWidth, 3);
 			child->children[1]->subdivide(2, splitPolicies, splitSizesOuterHeight, 3);
 			child->children[1]->children[1]->boundsExpand(frameExpansion);
 			child->children[1]->children[1]->subdivide(1, splitPolicies, splitSizesInnerWidth, 3);
-			child->children[1]->children[1]->children[1]->subdivide(2, splitPolicies, splitSizesInnerHeight, 3);
-			child->children[1]->children[1]->children[1]->children[1]->boundsExpand(openingExpansion);
+			child->children[1]->children[1]->children[1]->subdivide(2, splitPolicies, splitSizesInnerHeight, 3, windowMask);
 		}
 	}
 
