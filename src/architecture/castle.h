@@ -9,7 +9,6 @@ namespace architecture
 
 	// Rules on shapes
 	void castleWindows(Shape* wall);
-	void castleBase(Shape* wall);
 	void castleBattlement(Shape* wall);
 	void castleOuterWall(Shape* wall);
 }

@@ -137,12 +137,12 @@ void initSsaoSamples()
 
 void generateGeometry()
 {
-	vec3 wallNodes[] = { vec3(-80,0,0), vec3(130,0,30), vec3(50,0,-70), vec3(-80,0,0) };
+	vec3 wallNodes[] = { vec3(-80,0,0), vec3(130,0,30), vec3(200,0,70), vec3(240,0,0) };
 	walls = architecture::makeWalls(wallNodes, 4);
 
 	for(architecture::Shape* wall : walls)
 	{
-		architecture::castleWindows(wall);
+		architecture::castleOuterWall(wall);
 
 		wall->init();
 	}
