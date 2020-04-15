@@ -19,14 +19,14 @@ namespace architecture
 
 		for (int i = 0; i < numNodes - 1; ++i)
 		{
-			glm::vec3 xDir = glm::normalize(nodes[i + 1] - nodes[i]);
-			glm::vec3 zDir = glm::cross(xDir, upDir);
+			glm::vec3 yDir = glm::normalize(nodes[i + 1] - nodes[i]);
+			glm::vec3 xDir = glm::cross(yDir, upDir);
 
-			CoordSys wallCoordSys = { CoordSysType::cartesian, nodes[i], { xDir, upDir, zDir } };
+			CoordSys wallCoordSys = { CoordSysType::cartesian, nodes[i], { xDir, yDir, upDir } };
 
-			glm::vec2 wallBounds[3] = { glm::vec2(0, glm::length(nodes[i + 1] - nodes[i])), 
-				                        glm::vec2(0, wallHeight),
-										glm::vec2(-wallDepth / 2.0f, wallDepth / 2.0f) };
+			glm::vec2 wallBounds[3] = { glm::vec2(-wallDepth / 2.0f, wallDepth / 2.0f),
+										glm::vec2(0, glm::length(nodes[i + 1] - nodes[i])), 
+				                        glm::vec2(0, wallHeight) };
 			walls.push_back(new architecture::Shape(wallCoordSys, wallBounds));
 		}
 
@@ -35,19 +35,27 @@ namespace architecture
 
 	void castleWindows(Shape* wall)
 	{
-		wall->repeat(0, SizePolicy::absolute, 10);
+		wall->repeat(1, SizePolicy::absolute, 10);
 
 		SizePolicy splitPolicies[] = { SizePolicy::relative,
 									   SizePolicy::absolute,
 									   SizePolicy::relative };
-		glm::vec2 expansion[3] = { glm::vec2(0), glm::vec2(0), glm::vec2(2) };
+		glm::vec2 expansion[3] = { glm::vec2(2), glm::vec2(0), glm::vec2(0) };
 		float splitSizes1[] = { 1, 8, 1 };
 		float splitSizes2[] = { 1, 15, 1 };
 		for (architecture::Shape* child : wall->children)
 		{
-			child->subdivide(0, splitPolicies, splitSizes1, 3);
-			child->children[1]->subdivide(1, splitPolicies, splitSizes2, 3);
+			child->subdivide(1, splitPolicies, splitSizes1, 3);
+			child->children[1]->subdivide(2, splitPolicies, splitSizes2, 3);
 			child->children[1]->children[1]->boundsExpand(expansion);
 		}
 	}
+
+	void castleBase(Shape* wall)
+	{
+	}
+
+	void castleBattlement(Shape* wall);
+
+	void castleOuterWall(Shape* wall);
 }
