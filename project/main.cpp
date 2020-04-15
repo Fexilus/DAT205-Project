@@ -72,7 +72,8 @@ float point_light_intensity_multiplier = 10000.0f;
 ///////////////////////////////////////////////////////////////////////////////
 vec3 cameraPosition(-70.0f, 50.0f, 70.0f);
 vec3 cameraDirection = normalize(vec3(0.0f) - cameraPosition);
-float cameraSpeed = 10.f;
+float cameraSpeed = 45.f;
+float cameraRotationSpeed = 0.14f;
 
 vec3 worldUp(0.0f, 1.0f, 0.0f);
 
@@ -107,7 +108,7 @@ float ssaoRadius = 3.0f;
 ///////////////////////////////////////////////////////////////////////////////
 // Procedural generation
 ///////////////////////////////////////////////////////////////////////////////
-architecture::Shape* wall = nullptr;
+std::vector<architecture::Shape*> walls;
 
 void loadShaders(bool is_reload)
 {
@@ -136,12 +137,15 @@ void initSsaoSamples()
 
 void generateGeometry()
 {
-	vec3 wallNodes[3] = { vec3(-80,0,0), vec3(130,0,30) };
-	wall = architecture::makeWalls(wallNodes, 2);
+	vec3 wallNodes[] = { vec3(-80,0,0), vec3(130,0,30), vec3(50,0,-70), vec3(-80,0,0) };
+	walls = architecture::makeWalls(wallNodes, 4);
 
-	architecture::castleWindows(wall);
+	for(architecture::Shape* wall : walls)
+	{
+		architecture::castleWindows(wall);
 
-	wall->init();
+		wall->init();
+	}
 }
 
 void initGL()
@@ -284,7 +288,10 @@ void drawScene(GLuint currentShaderProgram,
 	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
 		inverse(transpose(viewMatrix)));
 
-	wall->render();
+	for (architecture::Shape* wall : walls)
+	{
+		wall->render();
+	}
 }
 
 
@@ -452,9 +459,8 @@ bool handleEvents(void)
 			// More info at https://wiki.libsdl.org/SDL_MouseMotionEvent
 			int delta_x = event.motion.x - g_prevMouseCoords.x;
 			int delta_y = event.motion.y - g_prevMouseCoords.y;
-			float rotationSpeed = 0.1f;
-			mat4 yaw = rotate(rotationSpeed * deltaTime * -delta_x, worldUp);
-			mat4 pitch = rotate(rotationSpeed * deltaTime * -delta_y,
+			mat4 yaw = rotate(cameraRotationSpeed * deltaTime * -delta_x, worldUp);
+			mat4 pitch = rotate(cameraRotationSpeed * deltaTime * -delta_y,
 			                    normalize(cross(cameraDirection, worldUp)));
 			cameraDirection = vec3(pitch * yaw * vec4(cameraDirection, 0.0f));
 			g_prevMouseCoords.x = event.motion.x;

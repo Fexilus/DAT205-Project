@@ -6,10 +6,10 @@
 
 namespace architecture
 {
-	Shape* makeWalls(glm::vec3 nodes[], size_t numNodes)
+	std::vector<Shape*> makeWalls(glm::vec3 nodes[], size_t numNodes)
 	{
-		/* Make walls from a series of nodes. Only generates one wall at the moment */
-		// TODO: Handle multiple walls
+		// Make walls from a series of nodes.
+
 		float wallHeight = 30;
 		float wallDepth = 10;
 
@@ -30,7 +30,7 @@ namespace architecture
 			walls.push_back(new architecture::Shape(wallCoordSys, wallBounds));
 		}
 
-		return(walls[0]);
+		return(walls);
 	}
 
 	void castleWindows(Shape* wall)
