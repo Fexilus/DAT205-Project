@@ -98,7 +98,7 @@ std::vector<vec3> ssaoHemisphereSamples;
 GLuint ssaoRotationTexture;
 
 int numberOfSsaoSamples = 32;
-const int ssaoRotationTextureSize = 8;
+const int ssaoRotationTextureSize = 4;
 bool useSsaoRotation = true;
 
 bool drawSsao = false;
@@ -109,6 +109,7 @@ float ssaoRadius = 3.0f;
 // Procedural generation
 ///////////////////////////////////////////////////////////////////////////////
 std::vector<architecture::Shape*> walls;
+architecture::Shape* tower;
 
 void loadShaders(bool is_reload)
 {
@@ -137,6 +138,7 @@ void initSsaoSamples()
 
 void generateGeometry()
 {
+	// Main castle walls
 	vec3 wallNodes[] = { vec3(-80,0,0), vec3(130,0,30), vec3(200,0,70), vec3(240,0,0) };
 	walls = architecture::makeWalls(wallNodes, 4);
 
@@ -146,6 +148,16 @@ void generateGeometry()
 
 		wall->init();
 	}
+
+	// Tower test
+	architecture::CoordSys towerCoordSys = { architecture::CoordSysType::cylindrical, vec3(0,0,50), { vec3(0,0,-1), vec3(0,1,0), vec3(1,0,0) } };
+
+	glm::vec2 wallBounds[3] = { glm::vec2(1,10),
+								glm::vec2(3.14, 1),
+								glm::vec2(0, 40) };
+	tower = new architecture::Shape(towerCoordSys, wallBounds);
+
+	tower->init();
 }
 
 void initGL()
@@ -292,6 +304,7 @@ void drawScene(GLuint currentShaderProgram,
 	{
 		wall->render();
 	}
+	tower->render();
 }
 
 

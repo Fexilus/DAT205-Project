@@ -8,7 +8,11 @@
 
 namespace architecture
 {
-	enum class CoordSysType { cartesian };
+	enum class CoordSysType 
+	{ 
+		cartesian,  // x,   y, z
+		cylindrical // r, phi, z (phi in radians, will be interpreted as values between 0 and 2pi)
+	};
 
 	struct CoordSys
 	{
@@ -32,6 +36,7 @@ namespace architecture
 	private:
 		// The vertex array object
 		GLuint vao;
+		int numNodes;
 
 	public:
 
