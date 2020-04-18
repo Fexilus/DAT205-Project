@@ -157,14 +157,9 @@ void generateGeometry()
 								glm::vec2(0, 2 * glm::pi<float>() -0.0001),
 								glm::vec2(0, 40) };
 	tower = new architecture::Shape(towerCoordSys, wallBounds);
-	tower->repeat(1, architecture::SizePolicy::relative, 0.2);
-	tower->children[0]->wrapCartesianOverCylindrical();
-	for (architecture::Shape* side : tower->children)
-	{
-		architecture::castleOuterWall(side);
-	}
-	architecture::castleOuterWall(tower->children[0]->children[0]);
 
+	architecture::castleOuterWall(tower);
+	
 	tower->init();
 }
 

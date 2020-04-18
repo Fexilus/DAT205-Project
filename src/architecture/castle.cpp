@@ -52,17 +52,26 @@ namespace architecture
 
 	void castleWindows(Shape* wall)
 	{
+		std::vector<Shape*> segments;
+
 		if (wall->coordSys.type == CoordSysType::cartesian)
 		{
 			wall->repeat(1, SizePolicy::absolute, 18);
+			segments = wall->children;
 		}
 		else if (wall->coordSys.type == CoordSysType::cylindrical)
 		{
+			wall->repeat(1, architecture::SizePolicy::relative, 0.2); // TODO: Temporary splitting length
 
+			for (architecture::Shape* side : wall->children)
+			{
+				side->wrapCartesianOverCylindrical();
+				segments.push_back(side->children[0]);
+			}
 		}
 		else
 		{
-			throw std::invalid_argument("Invalid coordiante system type");
+			throw std::invalid_argument("Invalid coordinate system type");
 		}
 
 		SizePolicy splitPolicies[] = { SizePolicy::relative,
@@ -73,15 +82,18 @@ namespace architecture
 		glm::vec2 frameExpansion[3] = { glm::vec2(1), glm::vec2(0), glm::vec2(0) };
 		float splitSizesInnerWidth[] = { 1, 2, 1 };
 		float splitSizesInnerHeight[] = { 1.5, 8, 1 };
-		int windowMask[] = { 1, 0, 1 };
-		for (architecture::Shape* child : wall->children)
+		int windowOuterMask[] = { 0, 1, 0 };
+		int windowInnerMask[] = { 1, 0, 1 };
+		for (architecture::Shape* child : segments)
 		{
-			child->subdivide(1, splitPolicies, splitSizesOuterWidth, 3);
-			child->children[1]->subdivide(2, splitPolicies, splitSizesOuterHeight, 3);
-			child->children[1]->children[1]->boundsExpand(frameExpansion);
-			child->children[1]->children[1]->subdivide(1, splitPolicies, splitSizesInnerWidth, 3);
-			child->children[1]->children[1]->children[1]->subdivide(2, splitPolicies, splitSizesInnerHeight, 3, windowMask);
+			child->subdivide(1, splitPolicies, splitSizesOuterWidth, 3, windowOuterMask);
+			child->children[0]->subdivide(2, splitPolicies, splitSizesOuterHeight, 3, windowOuterMask);
+			child->children[0]->children[0]->boundsExpand(frameExpansion);
+			child->children[0]->children[0]->subdivide(1, splitPolicies, splitSizesInnerWidth, 3);
+			child->children[0]->children[0]->children[1]->subdivide(2, splitPolicies, splitSizesInnerHeight, 3, windowInnerMask);
 		}
+		
+		wall->parentChildOp = Shape::ParentChildOperator::unite;
 	}
 
 	void castleBattlement(Shape* wall)

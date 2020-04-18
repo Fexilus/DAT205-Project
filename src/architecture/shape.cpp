@@ -4,7 +4,10 @@
 
 namespace architecture
 {
-	Shape::Shape(CoordSys coordSys, glm::vec2 bounds_[3]) : coordSys(coordSys)
+	Shape::Shape(CoordSys coordSys, glm::vec2 bounds_[3]) : 
+		coordSys(coordSys),
+		parentChildOp(ParentChildOperator::none),
+		childChildOp(ChildChildOperator::unite)
 	{
 		bounds[0] = bounds_[0];
 		bounds[1] = bounds_[1];
@@ -20,7 +23,7 @@ namespace architecture
 				child->init();
 			}
 		}
-		else
+		if ((children.size() == 0) | (parentChildOp != ParentChildOperator::none))
 		{
 			// Create a handle for the vertex array object
 			glGenVertexArrays(1, &vao);
@@ -261,7 +264,7 @@ namespace architecture
 				child->render();
 			}
 		}
-		else
+		if ((children.size() == 0) | (parentChildOp != ParentChildOperator::none))
 		{
 			glBindVertexArray(vao);
 			GLint current_program = 0;

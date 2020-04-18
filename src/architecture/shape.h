@@ -23,6 +23,7 @@ namespace architecture
 
 	enum class SizePolicy { absolute, relative };
 
+	// Main shape definition
 	class Shape
 	{
 	public:
@@ -32,12 +33,17 @@ namespace architecture
 		glm::vec2 bounds[3];
 		// Child shapes
 		std::vector<Shape*> children;
+		// Geometry resolution
+		// First this operation is done across all children
+		enum class ChildChildOperator { unite, intersect } childChildOp;
+		// Then this operation is done with the resulting geometry and the owner. None ignore owner geometry)
+		enum class ParentChildOperator { none, unite, intersect, subtract } parentChildOp;
 
 	private:
 		// The vertex array object
 		GLuint vao;
 		// The number of nodes to draw in the
-		int numNodes;
+		int numNodes = 0;
 
 	public:
 
