@@ -523,13 +523,16 @@ void gui()
 	ImGui_ImplSdlGL3_NewFrame(g_window);
 
 	// SSAO options
-	ImGui::Checkbox("Use SSAO", &useSsao);
-	ImGui::Checkbox("Draw SSAO", &drawSsao);
-	ImGui::SliderFloat("SSAO radius", &ssaoRadius, 0, 10);
-	if (ImGui::SliderInt("Number of SSAO samples", &numberOfSsaoSamples, 1, 64))
-		initSsaoSamples();
-	ImGui::Checkbox("Use rotation texture", &useSsaoRotation);
-	ImGui::Checkbox("Use blur pass", &useSsaoBlur);
+	if (ImGui::CollapsingHeader("SSAO", ImGuiTreeNodeFlags_Framed + ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("Use SSAO", &useSsao);
+		ImGui::Checkbox("Draw SSAO", &drawSsao);
+		ImGui::SliderFloat("Radius", &ssaoRadius, 0, 10);
+		if (ImGui::SliderInt("Number of samples", &numberOfSsaoSamples, 1, 64))
+			initSsaoSamples();
+		ImGui::Checkbox("Use rotation texture", &useSsaoRotation);
+		ImGui::Checkbox("Use blur pass", &useSsaoBlur);
+	}
 
 	// Reload shaders
 	if (ImGui::Button("Reload Shaders")) {
