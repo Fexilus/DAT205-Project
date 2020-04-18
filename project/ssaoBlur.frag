@@ -16,14 +16,14 @@ void main() {
 	int blurRadius = rotationTextureSize / 2;
 
     float result = 0.0;
-    for (int x = -blurRadius; x < blurRadius; ++x) 
+    for (int x = -blurRadius; x <= blurRadius; ++x) 
     {
-        for (int y = -blurRadius; y < blurRadius; ++y) 
+        for (int y = -blurRadius; y <= blurRadius; ++y) 
         {
             vec2 offset = vec2(float(x), float(y)) * texelSize;
             result += texture(ssaoTexture, texCoord + offset).r;
         }
     }
 
-    fragmentColor = result / float(rotationTextureSize * rotationTextureSize);
+    fragmentColor = result / float((2 * blurRadius + 1) * (2 * blurRadius + 1));
 }  
