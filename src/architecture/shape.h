@@ -36,6 +36,7 @@ namespace architecture
 	private:
 		// The vertex array object
 		GLuint vao;
+		// The number of nodes to draw in the
 		int numNodes;
 
 	public:

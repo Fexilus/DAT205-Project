@@ -3,13 +3,12 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 
 namespace architecture
 {
 	std::vector<Shape*> makeWalls(glm::vec3 nodes[], size_t numNodes)
 	{
-		// Make walls from a series of nodes.
-
 		float wallHeight = 50;
 		float wallDepth = 20;
 
@@ -19,16 +18,33 @@ namespace architecture
 
 		for (int i = 0; i < numNodes - 1; ++i)
 		{
+			// Place a tower
+			architecture::CoordSys cylinderCoordSys = { architecture::CoordSysType::cylindrical, nodes[i], { glm::vec3(0,0,1), glm::vec3(1,0,0), glm::vec3(0,1,0) } };
+
+			glm::vec2 cylinderBounds[3] = { glm::vec2(0, 20),
+										glm::vec2(0, 2 * glm::pi<float>() - 0.0001),
+										glm::vec2(0, wallHeight) };
+			walls.push_back(new architecture::Shape(cylinderCoordSys, cylinderBounds));
+
+			// Place straight wall
 			glm::vec3 yDir = glm::normalize(nodes[i + 1] - nodes[i]);
 			glm::vec3 xDir = glm::cross(yDir, upDir);
 
-			CoordSys wallCoordSys = { CoordSysType::cartesian, nodes[i], { xDir, yDir, upDir } };
+			CoordSys blockCoordSys = { CoordSysType::cartesian, nodes[i], { xDir, yDir, upDir } };
 
-			glm::vec2 wallBounds[3] = { glm::vec2(-wallDepth / 2.0f, wallDepth / 2.0f),
+			glm::vec2 blockBounds[3] = { glm::vec2(-wallDepth / 2.0f, wallDepth / 2.0f),
 										glm::vec2(0, glm::length(nodes[i + 1] - nodes[i])), 
 				                        glm::vec2(0, wallHeight) };
-			walls.push_back(new architecture::Shape(wallCoordSys, wallBounds));
+			walls.push_back(new architecture::Shape(blockCoordSys, blockBounds));
 		}
+
+		// Place a final tower
+		architecture::CoordSys cylinderCoordSys = { architecture::CoordSysType::cylindrical, nodes[numNodes - 1], { glm::vec3(0,0,1), glm::vec3(1,0,0), glm::vec3(0,1,0) } };
+
+		glm::vec2 cylinderBounds[3] = { glm::vec2(0, 20),
+									glm::vec2(0, 2 * glm::pi<float>() - 0.0001),
+									glm::vec2(0, wallHeight) };
+		walls.push_back(new architecture::Shape(cylinderCoordSys, cylinderBounds));
 
 		return(walls);
 	}

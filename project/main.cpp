@@ -100,6 +100,7 @@ GLuint ssaoRotationTexture;
 int numberOfSsaoSamples = 32;
 const int ssaoRotationTextureSize = 4;
 bool useSsaoRotation = true;
+bool useSsaoBlur = true;
 
 bool drawSsao = false;
 bool useSsao = true;
@@ -150,12 +151,13 @@ void generateGeometry()
 	}
 
 	// Tower test
-	architecture::CoordSys towerCoordSys = { architecture::CoordSysType::cylindrical, vec3(0,0,50), { vec3(0,0,-1), vec3(0,1,0), vec3(1,0,0) } };
+	architecture::CoordSys towerCoordSys = { architecture::CoordSysType::cylindrical, vec3(0,0,50), { vec3(0,0,1), vec3(1,0,0), vec3(0,1,0) } };
 
-	glm::vec2 wallBounds[3] = { glm::vec2(1,10),
-								glm::vec2(3.14, 1),
+	glm::vec2 wallBounds[3] = { glm::vec2(0, 20),
+								glm::vec2(0, 2 * glm::pi<float>() -0.0001),
 								glm::vec2(0, 40) };
 	tower = new architecture::Shape(towerCoordSys, wallBounds);
+	architecture::castleOuterWall(tower);
 
 	tower->init();
 }
@@ -396,19 +398,22 @@ void display(void)
 		///////////////////////////////////////////////////////////////////////////
 		// SSAO blur
 		///////////////////////////////////////////////////////////////////////////
-		glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFB.framebufferId);
-		glViewport(0, 0, windowWidth, windowHeight);
-		glClearColor(0.0, 0.0, 0.0, 1.0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		if (useSsaoBlur)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFB.framebufferId);
+			glViewport(0, 0, windowWidth, windowHeight);
+			glClearColor(0.0, 0.0, 0.0, 1.0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glUseProgram(ssaoBlurProgram);
+			glUseProgram(ssaoBlurProgram);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, ssaoOutputFB.colorTextureTargets[0]);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, ssaoOutputFB.colorTextureTargets[0]);
 
-		glUniform1i(glGetUniformLocation(ssaoBlurProgram, "rotationTextureSize"), ssaoRotationTextureSize);
+			glUniform1i(glGetUniformLocation(ssaoBlurProgram, "rotationTextureSize"), ssaoRotationTextureSize);
 
-		labhelper::drawFullScreenQuad();
+			labhelper::drawFullScreenQuad();
+		}
 	}
 
 	///////////////////////////////////////////////////////////////////////////
@@ -419,7 +424,7 @@ void display(void)
 	{
 		// Bind the ssao buffer
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, ssaoBlurFB.colorTextureTargets[0]);
+		glBindTexture(GL_TEXTURE_2D, useSsaoBlur ? ssaoBlurFB.colorTextureTargets[0] : ssaoOutputFB.colorTextureTargets[0]);
 	}
 
 	glUseProgram(shaderProgram);
@@ -524,6 +529,7 @@ void gui()
 	if (ImGui::SliderInt("Number of SSAO samples", &numberOfSsaoSamples, 1, 64))
 		initSsaoSamples();
 	ImGui::Checkbox("Use rotation texture", &useSsaoRotation);
+	ImGui::Checkbox("Use blur pass", &useSsaoBlur);
 
 	// Reload shaders
 	if (ImGui::Button("Reload Shaders")) {
