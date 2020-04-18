@@ -121,21 +121,19 @@ namespace architecture
 			else if (coordSys.type == CoordSysType::cylindrical)
 			{
 				int resolution = 20;
-				// Adjust bounds of phi to be in an appropriate range
-				glm::vec2 phiBounds = glm::mod(bounds[1], 2 * glm::pi<float>());
-				if (phiBounds[1] < phiBounds[0]) phiBounds[1] += 2 * glm::pi<float>();
-
-				float circleFrac = (phiBounds[1] - phiBounds[0]) / (2 * glm::pi<float>());
+				
+				adjustPhiBounds();
+				float circleFrac = (bounds[1][1] - bounds[1][0]) / (2 * glm::pi<float>());
 
 				// TODO: Make complete circle at when end point is almost at begining point
 				int numCircNodes = ceil(resolution * circleFrac) + 1;
 				std::vector<glm::vec3> circNodes(numCircNodes);
 
-				float phiStep = (phiBounds[1] - phiBounds[0]) / (float)(numCircNodes - 1);
+				float phiStep = (bounds[1][1] - bounds[1][0]) / (float)(numCircNodes - 1);
 
 				for (int i = 0; i < numCircNodes; ++i)
 				{
-					circNodes[i] = cosf(phiBounds[0] + i * phiStep) * coordSys.bases[0] + sinf(phiBounds[0] + i * phiStep) * coordSys.bases[1];
+					circNodes[i] = cosf(bounds[1][0] + i * phiStep) * coordSys.bases[0] + sinf(bounds[1][0] + i * phiStep) * coordSys.bases[1];
 				}
 
 				// Nodes for wedge opening side
@@ -360,5 +358,29 @@ namespace architecture
 		bounds[1][1] += boundExpansions[1][1];
 		bounds[2][0] -= boundExpansions[2][0];
 		bounds[2][1] += boundExpansions[2][1];
+	}
+
+	void Shape::wrapCartesianOverCylindrical()
+	{
+		adjustPhiBounds();
+		float halfwayAngle = (bounds[1][1] + bounds[1][0]) / 2;
+		glm::vec3 halfwayAngleDir = cosf(halfwayAngle) * coordSys.bases[0] + sinf(halfwayAngle) * coordSys.bases[1];
+
+		CoordSys wrapSys = { CoordSysType::cartesian, coordSys.origin, { halfwayAngleDir, glm::cross(coordSys.bases[2], halfwayAngleDir), coordSys.bases[2] } };
+
+		float oneSideYBounds = sinf(halfwayAngle - bounds[1][0]) * bounds[0][1];
+
+		glm::vec2 wrapBounds[3] = { glm::vec2(0, bounds[0][1]),
+									glm::vec2(-oneSideYBounds, oneSideYBounds),
+									bounds[2] };
+
+		children.push_back(new Shape(wrapSys, wrapBounds));
+	}
+
+	void Shape::adjustPhiBounds()
+	{
+		glm::vec2 phiBounds = glm::mod(bounds[1], 2 * glm::pi<float>());
+		if (phiBounds[1] < phiBounds[0]) phiBounds[1] += 2 * glm::pi<float>();
+		bounds[1] = phiBounds;
 	}
 }

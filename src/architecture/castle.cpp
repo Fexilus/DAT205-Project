@@ -1,6 +1,7 @@
 #include "castle.h"
 
 #include <vector>
+#include <stdexcept>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -51,7 +52,18 @@ namespace architecture
 
 	void castleWindows(Shape* wall)
 	{
-		wall->repeat(1, SizePolicy::absolute, 18);
+		if (wall->coordSys.type == CoordSysType::cartesian)
+		{
+			wall->repeat(1, SizePolicy::absolute, 18);
+		}
+		else if (wall->coordSys.type == CoordSysType::cylindrical)
+		{
+
+		}
+		else
+		{
+			throw std::invalid_argument("Invalid coordiante system type");
+		}
 
 		SizePolicy splitPolicies[] = { SizePolicy::relative,
 									   SizePolicy::absolute,

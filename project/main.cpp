@@ -157,7 +157,13 @@ void generateGeometry()
 								glm::vec2(0, 2 * glm::pi<float>() -0.0001),
 								glm::vec2(0, 40) };
 	tower = new architecture::Shape(towerCoordSys, wallBounds);
-	architecture::castleOuterWall(tower);
+	tower->repeat(1, architecture::SizePolicy::relative, 0.2);
+	tower->children[0]->wrapCartesianOverCylindrical();
+	for (architecture::Shape* side : tower->children)
+	{
+		architecture::castleOuterWall(side);
+	}
+	architecture::castleOuterWall(tower->children[0]->children[0]);
 
 	tower->init();
 }
@@ -548,6 +554,7 @@ void gui()
 }
 
 int main(int argc, char* argv[])
+
 {
 	g_window = labhelper::init_window_SDL("OpenGL Project");
 

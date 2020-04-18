@@ -51,5 +51,10 @@ namespace architecture
 		void subdivide(int axis, SizePolicy policies[], float sizeVals[], size_t numSubEl, int mask[]);
 		void repeat(int axis, SizePolicy policy, float sizeVal);
 		void boundsExpand(glm::vec2 boundExpansions[3]);
+		void wrapCartesianOverCylindrical();
+
+	private:
+		// Utility functions
+		void adjustPhiBounds();
 	};
 }
