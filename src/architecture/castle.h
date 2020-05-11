@@ -5,6 +5,8 @@
 namespace architecture
 {
 	// Rules on allignment elements
+	Shape* makeTower(glm::vec3 origin);
+	Shape* makeWall(glm::vec3 start, glm::vec3 end);
 	std::vector<Shape*> makeWalls(glm::vec3 nodes[], size_t numNodes);
 
 	// Rules on shapes

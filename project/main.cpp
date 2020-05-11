@@ -111,6 +111,7 @@ float ssaoRadius = 3.0f;
 ///////////////////////////////////////////////////////////////////////////////
 std::vector<architecture::Shape*> walls;
 architecture::Shape* tower;
+architecture::Shape* wall;
 
 void loadShaders(bool is_reload)
 {
@@ -151,16 +152,14 @@ void generateGeometry()
 	}
 
 	// Tower test
-	architecture::CoordSys towerCoordSys = { architecture::CoordSysType::cylindrical, vec3(0,0,50), { vec3(0,0,1), vec3(1,0,0), vec3(0,1,0) } };
-
-	glm::vec2 wallBounds[3] = { glm::vec2(0, 20),
-								glm::vec2(0, 2 * glm::pi<float>() -0.0001),
-								glm::vec2(0, 40) };
-	tower = new architecture::Shape(towerCoordSys, wallBounds);
-
-	architecture::castleOuterWall(tower);
+	tower = architecture::makeTower(vec3(0,0,50));
 	
 	tower->init();
+
+	// Wall test
+	wall = architecture::makeWall(vec3(0, 0, 90), vec3(80, 0, 100));
+
+	wall->init();
 }
 
 void initGL()
@@ -308,6 +307,7 @@ void drawScene(GLuint currentShaderProgram,
 		wall->render();
 	}
 	tower->render();
+	wall->render();
 }
 
 
