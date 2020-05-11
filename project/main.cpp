@@ -507,11 +507,11 @@ bool handleEvents(void)
 	{
 		cameraPosition += cameraSpeed * deltaTime * cameraRight;
 	}
-	if(state[SDL_SCANCODE_Q])
+	if(state[SDL_SCANCODE_LCTRL])
 	{
 		cameraPosition -= cameraSpeed * deltaTime * worldUp;
 	}
-	if(state[SDL_SCANCODE_E])
+	if(state[SDL_SCANCODE_SPACE])
 	{
 		cameraPosition += cameraSpeed * deltaTime * worldUp;
 	}
