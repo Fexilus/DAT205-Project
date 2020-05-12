@@ -426,14 +426,14 @@ namespace architecture
 
 		if (policy == SizePolicy::absoluteInner &&
 			coordSys.type == CoordSysType::cylindrical &&
-			(axis == 1 || axis == 2))
+			axis == 1)
 		{
 			// Rescale inner arc size to radians
 			scale = 1.0 / bounds[0][0];
 		}
 		if (policy == SizePolicy::absoluteOuter &&
 			coordSys.type == CoordSysType::cylindrical &&
-			(axis == 1 || axis == 2))
+			axis == 1)
 		{
 			// Rescale outer arc size to radians
 			scale = 1.0 / bounds[0][1];
