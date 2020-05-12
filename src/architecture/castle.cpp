@@ -25,7 +25,7 @@ namespace architecture
 
 		// Create inner room and walls
 		SizePolicy roomPolicies[] = { SizePolicy::relative,
-									  SizePolicy::absolute };
+									  SizePolicy::absoluteTrue };
 		float roomSizes[] = { 1, wallThickness };
 
 		towerStructure->subdivide(0, roomPolicies, roomSizes, 2);
@@ -61,9 +61,9 @@ namespace architecture
 		Shape* wallStructure = new architecture::Shape(blockCoordSys, blockBounds);
 
 		// Create inner room and walls
-		SizePolicy roomPolicies[] = { SizePolicy::absolute,
+		SizePolicy roomPolicies[] = { SizePolicy::absoluteTrue,
 									  SizePolicy::relative,
-									  SizePolicy::absolute };
+									  SizePolicy::absoluteTrue };
 		float roomSizes[] = { wallThickness, 1, wallThickness };
 
 		wallStructure->subdivide(0, roomPolicies, roomSizes, 3);
@@ -138,15 +138,14 @@ namespace architecture
 	{
 		std::vector<Shape*> segments;
 
+		wall->repeat(1, SizePolicy::absoluteOuter, 18);
+
 		if (wall->coordSys.type == CoordSysType::cartesian)
 		{
-			wall->repeat(1, SizePolicy::absolute, 18);
 			segments = wall->children;
 		}
 		else if (wall->coordSys.type == CoordSysType::cylindrical)
 		{
-			wall->repeat(1, architecture::SizePolicy::relative, 0.2); // TODO: Temporary splitting length
-
 			for (architecture::Shape* side : wall->children)
 			{
 				side->wrapCartesianOverCylindrical();
@@ -159,7 +158,7 @@ namespace architecture
 		}
 
 		SizePolicy splitPolicies[] = { SizePolicy::relative,
-									   SizePolicy::absolute,
+									   SizePolicy::absoluteTrue,
 									   SizePolicy::relative };
 		float splitSizesOuterWidth[] = { 1, 4, 1 };
 		float splitSizesOuterHeight[] = { 1.5, 10, 1 };
@@ -185,14 +184,14 @@ namespace architecture
 		// Parameters for the two sides of the wall and the walkway between
 		float railingSize = 2.0f;
 		SizePolicy overhangPolicies[] = { SizePolicy::relative,
-										  SizePolicy::absolute };
+										  SizePolicy::absoluteTrue };
 		float overhang[] = { 1, railingSize };
 		glm::vec2 railingExpansion[] = { glm::vec2(0), glm::vec2(0), glm::vec2(0, 8) };
 
 		// Parameters for the repeating sections of the wall
 		float sectionLength = 12.0f;
 		SizePolicy sectionProportionPolicies[] = { SizePolicy::relative,
-									               SizePolicy::absolute,
+									               SizePolicy::absoluteOuter,
 									               SizePolicy::relative };
 		float sectionProportions[] = { 1, 2, 1 };
 		glm::vec2 embrasureExpansion[] = { glm::vec2(0), glm::vec2(0), glm::vec2(0,-4) };
@@ -200,7 +199,7 @@ namespace architecture
 		wall->subdivide(0, overhangPolicies, overhang, 3);
 		wall->children[1]->boundsExpand(railingExpansion);
 
-		wall->children[1]->repeat(1, SizePolicy::absolute, sectionLength);
+		wall->children[1]->repeat(1, SizePolicy::absoluteOuter, sectionLength);
 
 		for (architecture::Shape* section : wall->children[1]->children)
 		{
@@ -211,9 +210,9 @@ namespace architecture
 
 	void castleOuterWall(Shape* wall)
 	{
-		SizePolicy splitPolicies[] = { SizePolicy::absolute,
+		SizePolicy splitPolicies[] = { SizePolicy::absoluteTrue,
 									   SizePolicy::relative,
-									   SizePolicy::absolute };
+									   SizePolicy::absoluteTrue };
 		float splitSizes[] = { 5, 1, 5 };
 		wall->subdivide(2, splitPolicies, splitSizes, 3);
 

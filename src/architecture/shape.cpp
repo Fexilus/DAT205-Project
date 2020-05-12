@@ -297,7 +297,14 @@ namespace architecture
 		float relSum = 0;
 		for (int i = 0; i < numSubEl; i++)
 		{
-			if (policies[i] == SizePolicy::absolute) absSum += sizeVals[i];
+			if (policies[i] == SizePolicy::absoluteTrue ||
+				policies[i] == SizePolicy::absoluteInner ||
+				policies[i] == SizePolicy::absoluteOuter)
+			{
+				// Scale the measure depending on what type of value is given
+				float scale = absoluteRescaling(axis, policies[i]);
+				absSum += scale * sizeVals[i];
+			}
 			else if (policies[i] == SizePolicy::relative) relSum += sizeVals[i];
 		}
 
@@ -307,9 +314,13 @@ namespace architecture
 		newBounds[axis][1] = newBounds[axis][0];
 		for (int i = 0; i < numSubEl; i++)
 		{
-			if (policies[i] == SizePolicy::absolute)
+			if (policies[i] == SizePolicy::absoluteTrue ||
+				policies[i] == SizePolicy::absoluteInner ||
+				policies[i] == SizePolicy::absoluteOuter)
 			{
-				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVals[i]);
+				// Scale the measure depending on what type of value is given
+				float scale = absoluteRescaling(axis, policies[i]);
+				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + scale * sizeVals[i]);
 			}
 			else if (policies[i] == SizePolicy::relative)
 			{
@@ -328,14 +339,35 @@ namespace architecture
 		newBounds[2] = bounds[2];
 		float parentSize = bounds[axis][1] - bounds[axis][0];
 
-		size_t numSubEl;
+		/*
+		float paddingVal;
+
 		if (policy == SizePolicy::absolute)
 		{
-			numSubEl = (int)floor(parentSize / sizeVal);
+			paddingVal = fmod(parentSize, sizeVal);
+
+		}
+		else if (policy == SizePolicy::relative)
+		{
+			
+		}
+		*/
+
+		size_t numSubEl;
+
+		if (policy == SizePolicy::absoluteTrue ||
+			policy == SizePolicy::absoluteInner ||
+			policy == SizePolicy::absoluteOuter)
+		{
+			// Scale the measure depending on what type of value is given
+			float scale = absoluteRescaling(axis, policy);
+
+			numSubEl = (int)floor(parentSize / (scale * sizeVal));
+
 			newBounds[axis][1] = newBounds[axis][0];
 			for (int i = 0; i < numSubEl; i++)
 			{
-				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVal);
+				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + (scale * sizeVal));
 
 				children.push_back(new Shape(coordSys, newBounds));
 			}
@@ -385,5 +417,32 @@ namespace architecture
 		glm::vec2 phiBounds = glm::mod(bounds[1], 2 * glm::pi<float>());
 		if (phiBounds[1] < phiBounds[0]) phiBounds[1] += 2 * glm::pi<float>();
 		bounds[1] = phiBounds;
+	}
+
+	// Rescale non-"true absolute" size to "true unit"
+	float Shape::absoluteRescaling(int axis, SizePolicy policy)
+	{
+		float scale;
+
+		if (policy == SizePolicy::absoluteInner &&
+			coordSys.type == CoordSysType::cylindrical &&
+			(axis == 1 || axis == 2))
+		{
+			// Rescale inner arc size to radians
+			scale = 1.0 / bounds[0][0];
+		}
+		if (policy == SizePolicy::absoluteOuter &&
+			coordSys.type == CoordSysType::cylindrical &&
+			(axis == 1 || axis == 2))
+		{
+			// Rescale outer arc size to radians
+			scale = 1.0 / bounds[0][1];
+		}
+		else
+		{
+			scale = 1.0;
+		}
+
+		return scale;
 	}
 }

@@ -21,7 +21,13 @@ namespace architecture
 		glm::vec3 bases[3];
 	};
 
-	enum class SizePolicy { absolute, relative };
+	// Types of size values that can be given to shape splitting
+	enum class SizePolicy { 
+		absoluteTrue,  // Size with the native unit of the axis to split
+		relative,      // Relative size to all other relative sizes
+		absoluteInner, // Size with the cartesian unit, measured on the shortest part of the geometry
+		absoluteOuter  // Size with the cartesian unit, measured on the longest part of the geometry
+	};
 
 	// Main shape definition
 	class Shape
@@ -62,5 +68,6 @@ namespace architecture
 	private:
 		// Utility functions
 		void adjustPhiBounds();
+		float absoluteRescaling(int axis, SizePolicy policy);
 	};
 }
