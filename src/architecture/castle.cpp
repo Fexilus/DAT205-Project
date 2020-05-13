@@ -5,6 +5,8 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/vector_angle.hpp>
 
 namespace architecture
 {
@@ -37,6 +39,86 @@ namespace architecture
 
 		// Ornate tower wall
 		castleOuterWall(towerWall);
+
+		return towerStructure;
+	}
+
+	Shape* makeTower(glm::vec3 origin, glm::vec3 connectorDirs[], float connectorWidths[], size_t numConnectors)
+	{
+		float height = 40;
+		float radius = 20;
+		float wallThickness = 3;
+
+		glm::vec3 upDir(0, 1, 0);
+
+		std::vector<float> connectorAngleWidths;
+		for (int i = 0; i < numConnectors; ++i)
+		{
+			connectorAngleWidths.push_back(2 * asin(connectorWidths[i] / (2 * radius)));
+		}
+
+		std::vector<float> angleWidths;
+		if (numConnectors > 1)
+		{
+			for (int i = 0; i < numConnectors; ++i)
+			{
+				float wallAngle = glm::angle(glm::normalize(connectorDirs[i]), glm::normalize(connectorDirs[(i + 1) % numConnectors]));
+				if (glm::dot(glm::cross(glm::normalize(connectorDirs[i]), glm::normalize(connectorDirs[(i + 1) % numConnectors])), upDir) < 0)
+				{
+					wallAngle = 2 * glm::pi<float>() - wallAngle;
+				}
+
+				wallAngle -= (connectorAngleWidths[i] + connectorAngleWidths[(i + 1) % numConnectors]) / 2.0;
+
+				// TODO: Ineffective to have connector values in two parts of memory
+				angleWidths.push_back(connectorAngleWidths[i]);
+				angleWidths.push_back(wallAngle);
+			}
+		}
+		else
+		{
+			angleWidths.push_back(connectorAngleWidths[0]);
+			angleWidths.push_back(2 * glm::pi<float>() - connectorAngleWidths[0]);
+		}
+
+		glm::vec3 rDir = glm::rotate(glm::normalize(connectorDirs[0]), -connectorAngleWidths[0] / 2.0f, upDir);
+		glm::vec3 phiDir = glm::cross(upDir, rDir);
+
+		// Create the tower structure
+		architecture::CoordSys cylinderCoordSys = { architecture::CoordSysType::cylindrical, origin, { rDir, phiDir, upDir } };
+
+		glm::vec2 cylinderBounds[3] = { glm::vec2(0, radius),
+										glm::vec2(0, 2 * glm::pi<float>() - 0.0001),
+										glm::vec2(0, height) };
+
+		Shape* towerStructure = new architecture::Shape(cylinderCoordSys, cylinderBounds);
+
+		// Create inner room and walls
+		SizePolicy roomPolicies[] = { SizePolicy::relative,
+									  SizePolicy::absoluteTrue };
+		float roomSizes[] = { 1, wallThickness };
+
+		towerStructure->subdivide(0, roomPolicies, roomSizes, 2);
+
+		Shape* towerWall = towerStructure->children[1];
+
+		// Adjust inner room
+		// towerStructure->children[0]->
+
+		// Split wall for connectors
+		std::vector<SizePolicy> connectorSplitPolicies(2 * numConnectors, SizePolicy::absoluteTrue);
+		std::vector<int> splitMask(2 * numConnectors, 1);
+		for (size_t i = 0; i < numConnectors; ++i)
+		{
+			splitMask[2*i] = 0;
+		}
+
+		towerWall->subdivide(1, connectorSplitPolicies.data(), angleWidths.data(), 2 * numConnectors, splitMask.data());
+
+		for (Shape* wall : towerWall->children)
+		{
+			castleOuterWall(wall);
+		}
 
 		return towerStructure;
 	}
@@ -93,43 +175,39 @@ namespace architecture
 	std::vector<Shape*> makeWalls(glm::vec3 nodes[], size_t numNodes)
 	{
 		float wallHeight = 50;
-		float wallDepth = 20;
+		float wallDepth = 10;
 		float wallThickness = 3;
+		float towerRadius = 20;
 
 		glm::vec3 upDir(0, 1, 0);
 
 		std::vector<Shape*> structures;
 		std::vector<Shape*> walls;
 
-		for (int i = 0; i < numNodes - 1; ++i)
+		// First tower and wall
+		glm::vec3 startConnector[] = { nodes[1] - nodes[0] };
+		float startConnectorWidth[] = { 2 * wallDepth };
+		structures.push_back(makeTower(nodes[0], startConnector, startConnectorWidth, 1));
+
+		float wallBuffer = sqrt(towerRadius * towerRadius - wallDepth * wallDepth);
+		structures.push_back(makeWall(nodes[0] + wallBuffer * glm::normalize(nodes[1] - nodes[0]), nodes[1] - wallBuffer * glm::normalize(nodes[1] - nodes[0])));
+
+		for (int i = 1; i < numNodes - 1; ++i)
 		{
 			// Place a tower
-			architecture::CoordSys cylinderCoordSys = { architecture::CoordSysType::cylindrical, nodes[i], { glm::vec3(0,0,1), glm::vec3(1,0,0), glm::vec3(0,1,0) } };
-
-			glm::vec2 cylinderBounds[3] = { glm::vec2(0, 20),
-										glm::vec2(0, 2 * glm::pi<float>() - 0.0001),
-										glm::vec2(0, wallHeight) };
-			structures.push_back(new architecture::Shape(cylinderCoordSys, cylinderBounds));
+			glm::vec3 connector[] = { nodes[i + 1] - nodes[i], nodes[i - 1] - nodes[i] };
+			float connectorWidth[] = { 2 * wallDepth, 2 * wallDepth };
+			structures.push_back(makeTower(nodes[i], connector, connectorWidth, 2));
 
 			// Place straight wall
-			glm::vec3 yDir = glm::normalize(nodes[i + 1] - nodes[i]);
-			glm::vec3 xDir = glm::cross(yDir, upDir);
-
-			CoordSys blockCoordSys = { CoordSysType::cartesian, nodes[i], { xDir, yDir, upDir } };
-
-			glm::vec2 blockBounds[3] = { glm::vec2(-wallDepth / 2.0f, wallDepth / 2.0f),
-										glm::vec2(0, glm::length(nodes[i + 1] - nodes[i])), 
-				                        glm::vec2(0, wallHeight) };
-			structures.push_back(new architecture::Shape(blockCoordSys, blockBounds));
+			float wallBuffer = sqrt(towerRadius * towerRadius - wallDepth * wallDepth);
+			structures.push_back(makeWall(nodes[i] + wallBuffer * glm::normalize(nodes[i + 1] - nodes[i]), nodes[i+1] - wallBuffer * glm::normalize(nodes[i + 1] - nodes[i])));
 		}
 
-		// Place a final tower
-		architecture::CoordSys cylinderCoordSys = { architecture::CoordSysType::cylindrical, nodes[numNodes - 1], { glm::vec3(0,0,1), glm::vec3(1,0,0), glm::vec3(0,1,0) } };
-
-		glm::vec2 cylinderBounds[3] = { glm::vec2(0, 20),
-									glm::vec2(0, 2 * glm::pi<float>() - 0.0001),
-									glm::vec2(0, wallHeight) };
-		structures.push_back(new architecture::Shape(cylinderCoordSys, cylinderBounds));
+		// Last tower
+		glm::vec3 endConnector[] = { nodes[numNodes - 2] - nodes[numNodes - 1] };
+		float endConnectorWidth[] = { 2 * wallDepth };
+		structures.push_back(makeTower(nodes[numNodes - 1], endConnector, endConnectorWidth, 1));
 
 		return(structures);
 	}

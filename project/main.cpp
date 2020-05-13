@@ -146,8 +146,6 @@ void generateGeometry()
 
 	for(architecture::Shape* wall : walls)
 	{
-		architecture::castleOuterWall(wall);
-
 		wall->init();
 	}
 
@@ -457,7 +455,7 @@ bool handleEvents(void)
 		{
 			showUI = !showUI;
 		}
-		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT
+		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT
 		   && (!showUI || !ImGui::GetIO().WantCaptureMouse))
 		{
 			g_isMouseDragging = true;
@@ -468,7 +466,7 @@ bool handleEvents(void)
 			g_prevMouseCoords.y = y;
 		}
 
-		if(!(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT)))
+		if(!(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_RIGHT)))
 		{
 			g_isMouseDragging = false;
 		}
