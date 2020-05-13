@@ -347,20 +347,7 @@ namespace architecture
 
 		// Add children list
 		if (children.find(name) == children.end()) children[name] = new std::vector<Shape*>();
-
-		/*
-		float paddingVal;
-
-		if (policy == SizePolicy::absolute)
-		{
-			paddingVal = fmod(parentSize, sizeVal);
-
-		}
-		else if (policy == SizePolicy::relative)
-		{
-			
-		}
-		*/
+		if (children.find("Padding") == children.end()) children["Padding"] = new std::vector<Shape*>();
 
 		size_t numSubEl;
 
@@ -371,18 +358,45 @@ namespace architecture
 			// Scale the measure depending on what type of value is given
 			float scale = absoluteRescaling(axis, policy);
 
+			float nativePaddingVal;
+			if (scale * sizeVal > parentSize) nativePaddingVal = parentSize / 2.0f;
+			else nativePaddingVal = fmod(parentSize, scale * sizeVal) / 2.0f;
+
 			numSubEl = (int)floor(parentSize / (scale * sizeVal));
 
-			newBounds[axis][1] = newBounds[axis][0];
+			newBounds[axis][1] = newBounds[axis][0] + nativePaddingVal;
 			for (int i = 0; i < numSubEl; i++)
 			{
 				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + (scale * sizeVal));
 
 				children[name]->push_back(new Shape(coordSys, newBounds));
 			}
+
+			if (scale * nativePaddingVal > 0.0001)
+			{
+				glm::vec2 lowerPaddingBounds[3];
+				lowerPaddingBounds[0] = bounds[0];
+				lowerPaddingBounds[1] = bounds[1];
+				lowerPaddingBounds[2] = bounds[2];
+
+				lowerPaddingBounds[axis][1] = lowerPaddingBounds[axis][0] + nativePaddingVal;
+
+				children["Padding"]->push_back(new Shape(coordSys, lowerPaddingBounds));
+
+				glm::vec2 upperPaddingBounds[3];
+				upperPaddingBounds[0] = bounds[0];
+				upperPaddingBounds[1] = bounds[1];
+				upperPaddingBounds[2] = bounds[2];
+
+				upperPaddingBounds[axis][0] = upperPaddingBounds[axis][1] - nativePaddingVal;
+
+				children["Padding"]->push_back(new Shape(coordSys, upperPaddingBounds));
+			}
 		}
 		else if (policy == SizePolicy::relative)
 		{
+			float paddingVal = fmod(1, sizeVal);
+
 			numSubEl = (int)floor(1.0f / sizeVal);
 			newBounds[axis][1] = newBounds[axis][0];
 			for (int i = 0; i < numSubEl; i++)
@@ -390,6 +404,27 @@ namespace architecture
 				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVal * parentSize);
 
 				children[name]->push_back(new Shape(coordSys, newBounds));
+			}
+
+			if (paddingVal * parentSize > 0.0001)
+			{
+				glm::vec2 lowerPaddingBounds[3];
+				lowerPaddingBounds[0] = bounds[0];
+				lowerPaddingBounds[1] = bounds[1];
+				lowerPaddingBounds[2] = bounds[2];
+
+				lowerPaddingBounds[axis][1] = lowerPaddingBounds[axis][0] + paddingVal / 2.0f * parentSize;
+
+				children["Padding"]->push_back(new Shape(coordSys, lowerPaddingBounds));
+
+				glm::vec2 upperPaddingBounds[3];
+				upperPaddingBounds[0] = bounds[0];
+				upperPaddingBounds[1] = bounds[1];
+				upperPaddingBounds[2] = bounds[2];
+
+				upperPaddingBounds[axis][0] = upperPaddingBounds[axis][1] - paddingVal / 2.0f * parentSize;
+
+				children["Padding"]->push_back(new Shape(coordSys, upperPaddingBounds));
 			}
 		}
 	}
