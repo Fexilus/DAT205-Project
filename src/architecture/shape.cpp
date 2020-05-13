@@ -16,9 +16,9 @@ namespace architecture
 
 	void Shape::init()
 	{
-		if (children.size() > 0)
+		for (auto& childCollection : children)
 		{
-			for (Shape* child : children)
+			for (Shape* child : *childCollection.second)
 			{
 				child->init();
 			}
@@ -257,9 +257,9 @@ namespace architecture
 
 	void Shape::render()
 	{
-		if(children.size() > 0)
+		for (auto& childCollection : children)
 		{
-			for (Shape* child : children)
+			for (Shape* child : *childCollection.second)
 			{
 				child->render();
 			}
@@ -278,20 +278,26 @@ namespace architecture
 		}
 	}
 
-	void Shape::subdivide(int axis, SizePolicy policies[], float sizeVals[], size_t numSubEl)
+	void Shape::subdivide(int axis, std::string names[], SizePolicy policies[], float sizeVals[], size_t numSubEl)
 	{
 		std::vector<int> mask(numSubEl, 1);
-		subdivide(axis, policies, sizeVals, numSubEl, mask.data());
+		subdivide(axis, names, policies, sizeVals, numSubEl, mask.data());
 	}
 
 	// Subdivision where subshapes can me masked away
-	void Shape::subdivide(int axis, SizePolicy policies[], float sizeVals[], size_t numSubEl, int mask[])
+	void Shape::subdivide(int axis, std::string names[], SizePolicy policies[], float sizeVals[], size_t numSubEl, int mask[])
 	{
 		glm::vec2 newBounds[3];
 		newBounds[0] = bounds[0];
 		newBounds[1] = bounds[1];
 		newBounds[2] = bounds[2];
 		float parentSize = bounds[axis][1] - bounds[axis][0];
+
+		// Add children lists
+		for (size_t i = 0; i < numSubEl; ++i)
+		{
+			if (children.find(names[i]) == children.end()) children[names[i]] = new std::vector<Shape*>();
+		}
 
 		float absSum = 0;
 		float relSum = 0;
@@ -327,17 +333,20 @@ namespace architecture
 				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVals[i] * relScale);
 			}
 
-			if (mask[i]) children.push_back(new Shape(coordSys, newBounds));
+			if (mask[i]) children[names[i]]->push_back(new Shape(coordSys, newBounds));
 		}
 	}
 
-	void Shape::repeat(int axis, SizePolicy policy, float sizeVal)
+	void Shape::repeat(int axis, std::string name, SizePolicy policy, float sizeVal)
 	{
 		glm::vec2 newBounds[3];
 		newBounds[0] = bounds[0];
 		newBounds[1] = bounds[1];
 		newBounds[2] = bounds[2];
 		float parentSize = bounds[axis][1] - bounds[axis][0];
+
+		// Add children list
+		if (children.find(name) == children.end()) children[name] = new std::vector<Shape*>();
 
 		/*
 		float paddingVal;
@@ -369,7 +378,7 @@ namespace architecture
 			{
 				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + (scale * sizeVal));
 
-				children.push_back(new Shape(coordSys, newBounds));
+				children[name]->push_back(new Shape(coordSys, newBounds));
 			}
 		}
 		else if (policy == SizePolicy::relative)
@@ -380,7 +389,7 @@ namespace architecture
 			{
 				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + sizeVal * parentSize);
 
-				children.push_back(new Shape(coordSys, newBounds));
+				children[name]->push_back(new Shape(coordSys, newBounds));
 			}
 		}
 	}
@@ -395,8 +404,11 @@ namespace architecture
 		bounds[2][1] += boundExpansions[2][1];
 	}
 
-	void Shape::wrapCartesianOverCylindrical()
+	void Shape::wrapCartesianOverCylindrical(std::string name)
 	{
+		// Add children list
+		if (children.find(name) == children.end()) children[name] = new std::vector<Shape*>();
+
 		adjustPhiBounds();
 		float halfwayAngle = (bounds[1][1] + bounds[1][0]) / 2;
 		glm::vec3 halfwayAngleDir = cosf(halfwayAngle) * coordSys.bases[0] + sinf(halfwayAngle) * coordSys.bases[1];
@@ -409,7 +421,7 @@ namespace architecture
 									glm::vec2(-oneSideYBounds, oneSideYBounds),
 									bounds[2] };
 
-		children.push_back(new Shape(wrapSys, wrapBounds));
+		children[name]->push_back(new Shape(wrapSys, wrapBounds));
 	}
 
 	void Shape::adjustPhiBounds()

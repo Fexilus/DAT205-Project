@@ -26,19 +26,18 @@ namespace architecture
 		Shape* towerStructure = new architecture::Shape(cylinderCoordSys, cylinderBounds);
 
 		// Create inner room and walls
+		std::string roomNames[] = { "Room", "Wall" };
 		SizePolicy roomPolicies[] = { SizePolicy::relative,
 									  SizePolicy::absoluteTrue };
 		float roomSizes[] = { 1, wallThickness };
 
-		towerStructure->subdivide(0, roomPolicies, roomSizes, 2);
-
-		Shape* towerWall = towerStructure->children[1];
+		towerStructure->subdivide(0, roomNames, roomPolicies, roomSizes, 2);
 
 		// Adjust inner room
 		// towerStructure->children[0]->
 
 		// Ornate tower wall
-		castleOuterWall(towerWall);
+		for (auto& wall : *towerStructure->children["Wall"]) castleOuterWall(wall);
 
 		return towerStructure;
 	}
@@ -94,18 +93,18 @@ namespace architecture
 		Shape* towerStructure = new architecture::Shape(cylinderCoordSys, cylinderBounds);
 
 		// Create inner room and walls
+		std::string roomNames[] = { "Room", "Wall" };
 		SizePolicy roomPolicies[] = { SizePolicy::relative,
 									  SizePolicy::absoluteTrue };
 		float roomSizes[] = { 1, wallThickness };
 
-		towerStructure->subdivide(0, roomPolicies, roomSizes, 2);
-
-		Shape* towerWall = towerStructure->children[1];
+		towerStructure->subdivide(0, roomNames, roomPolicies, roomSizes, 2);
 
 		// Adjust inner room
 		// towerStructure->children[0]->
 
 		// Split wall for connectors
+		std::vector<std::string> connectorSplitNames(2 * numConnectors, "Wall Part");
 		std::vector<SizePolicy> connectorSplitPolicies(2 * numConnectors, SizePolicy::absoluteTrue);
 		std::vector<int> splitMask(2 * numConnectors, 1);
 		for (size_t i = 0; i < numConnectors; ++i)
@@ -113,11 +112,14 @@ namespace architecture
 			splitMask[2*i] = 0;
 		}
 
-		towerWall->subdivide(1, connectorSplitPolicies.data(), angleWidths.data(), 2 * numConnectors, splitMask.data());
-
-		for (Shape* wall : towerWall->children)
+		for (auto& wall : *towerStructure->children["Wall"])
 		{
-			castleOuterWall(wall);
+			wall->subdivide(1, connectorSplitNames.data(), connectorSplitPolicies.data(), angleWidths.data(), 2 * numConnectors, splitMask.data());
+
+			for (Shape* wallPart : *wall->children["Wall Part"])
+			{
+				castleOuterWall(wallPart);
+			}
 		}
 
 		return towerStructure;
@@ -143,28 +145,34 @@ namespace architecture
 		Shape* wallStructure = new architecture::Shape(blockCoordSys, blockBounds);
 
 		// Create inner room and walls
+		std::string roomNames[] = { "Reverse Wall", "Room", "Wall" };
 		SizePolicy roomPolicies[] = { SizePolicy::absoluteTrue,
 									  SizePolicy::relative,
 									  SizePolicy::absoluteTrue };
 		float roomSizes[] = { wallThickness, 1, wallThickness };
 
-		wallStructure->subdivide(0, roomPolicies, roomSizes, 3);
+		wallStructure->subdivide(0, roomNames, roomPolicies, roomSizes, 3);
 
 		// Rotate coordinate system of back wall so that x points outwards
 		// TODO: Separate into separate system
-		wallStructure->children[0]->coordSys.bases[0] *= -1;
-		wallStructure->children[0]->coordSys.bases[1] *= -1;
-		glm::vec2 oldXBounds = wallStructure->children[0]->bounds[0];
-		wallStructure->children[0]->bounds[0][0] = -1 * oldXBounds[1];
-		wallStructure->children[0]->bounds[0][1] = -1 * oldXBounds[0];
-		glm::vec2 oldYBounds = wallStructure->children[0]->bounds[1];
-		wallStructure->children[0]->bounds[1][0] = -1 * oldYBounds[1];
-		wallStructure->children[0]->bounds[1][1] = -1 * oldYBounds[0];
-
-		std::vector<Shape*> walls = { wallStructure->children[0], wallStructure->children[2] };
+		for (auto& reverseWall : *wallStructure->children["Reverse Wall"])
+		{
+			reverseWall->coordSys.bases[0] *= -1;
+			reverseWall->coordSys.bases[1] *= -1;
+			glm::vec2 oldXBounds = reverseWall->bounds[0];
+			reverseWall->bounds[0][0] = -1 * oldXBounds[1];
+			reverseWall->bounds[0][1] = -1 * oldXBounds[0];
+			glm::vec2 oldYBounds = reverseWall->bounds[1];
+			reverseWall->bounds[1][0] = -1 * oldYBounds[1];
+			reverseWall->bounds[1][1] = -1 * oldYBounds[0];
+		}
 
 		// Ornate walls
-		for (architecture::Shape* wall : walls)
+		for (architecture::Shape* wall : *wallStructure->children["Reverse Wall"])
+		{
+			architecture::castleOuterWall(wall);
+		}
+		for (architecture::Shape* wall : *wallStructure->children["Wall"])
 		{
 			architecture::castleOuterWall(wall);
 		}
@@ -216,18 +224,18 @@ namespace architecture
 	{
 		std::vector<Shape*> segments;
 
-		wall->repeat(1, SizePolicy::absoluteOuter, 18);
+		wall->repeat(1, "Native Segment", SizePolicy::absoluteOuter, 18);
 
 		if (wall->coordSys.type == CoordSysType::cartesian)
 		{
-			segments = wall->children;
+			segments = *wall->children["Native Segment"];
 		}
 		else if (wall->coordSys.type == CoordSysType::cylindrical)
 		{
-			for (architecture::Shape* side : wall->children)
+			for (architecture::Shape* cylinderSegment : *wall->children["Native Segment"])
 			{
-				side->wrapCartesianOverCylindrical();
-				segments.push_back(side->children[0]);
+				cylinderSegment->wrapCartesianOverCylindrical("Cartesian Segment");
+				for (auto& segment : *cylinderSegment->children["Cartesian Segment"]) segments.push_back(segment);
 			}
 		}
 		else
@@ -238,20 +246,32 @@ namespace architecture
 		SizePolicy splitPolicies[] = { SizePolicy::relative,
 									   SizePolicy::absoluteTrue,
 									   SizePolicy::relative };
+
+		std::string splitOuterNames[] = { "EMPTY", "Window", "EMPTY" };
 		float splitSizesOuterWidth[] = { 1, 4, 1 };
 		float splitSizesOuterHeight[] = { 1.5, 10, 1 };
 		glm::vec2 frameExpansion[3] = { glm::vec2(1), glm::vec2(0), glm::vec2(0) };
+		std::string splitInnerNames[] = { "Frame", "Space", "Frame" };
 		float splitSizesInnerWidth[] = { 1, 2, 1 };
 		float splitSizesInnerHeight[] = { 1.5, 8, 1 };
 		int windowOuterMask[] = { 0, 1, 0 };
 		int windowInnerMask[] = { 1, 0, 1 };
-		for (architecture::Shape* child : segments)
+		for (architecture::Shape* segment : segments)
 		{
-			child->subdivide(1, splitPolicies, splitSizesOuterWidth, 3, windowOuterMask);
-			child->children[0]->subdivide(2, splitPolicies, splitSizesOuterHeight, 3, windowOuterMask);
-			child->children[0]->children[0]->boundsExpand(frameExpansion);
-			child->children[0]->children[0]->subdivide(1, splitPolicies, splitSizesInnerWidth, 3);
-			child->children[0]->children[0]->children[1]->subdivide(2, splitPolicies, splitSizesInnerHeight, 3, windowInnerMask);
+			segment->subdivide(1, splitOuterNames, splitPolicies, splitSizesOuterWidth, 3, windowOuterMask);
+			for (auto& wWindow : *segment->children["Window"])
+			{
+				wWindow->subdivide(2, splitOuterNames, splitPolicies, splitSizesOuterHeight, 3, windowOuterMask);
+				for (auto& window : *wWindow->children["Window"])
+				{ 
+					window->boundsExpand(frameExpansion);
+					window->subdivide(1, splitInnerNames, splitPolicies, splitSizesInnerWidth, 3);
+					for (auto& space : *window->children["Space"])
+					{
+						space->subdivide(2, splitInnerNames, splitPolicies, splitSizesInnerHeight, 3, windowInnerMask);
+					}
+				}
+			}
 		}
 		
 		wall->parentChildOp = Shape::ParentChildOperator::unite;
@@ -261,6 +281,7 @@ namespace architecture
 	{
 		// Parameters for the two sides of the wall and the walkway between
 		float railingSize = 2.0f;
+		std::string overhangNames[] = { "Floor", "Railing" };
 		SizePolicy overhangPolicies[] = { SizePolicy::relative,
 										  SizePolicy::absoluteTrue };
 		float overhang[] = { 1, railingSize };
@@ -268,38 +289,47 @@ namespace architecture
 
 		// Parameters for the repeating sections of the wall
 		float sectionLength = 12.0f;
+
+		std::string sectionProportionNames[] = { "Portion", "Embrasure", "Portion" };
 		SizePolicy sectionProportionPolicies[] = { SizePolicy::relative,
 									               SizePolicy::absoluteOuter,
 									               SizePolicy::relative };
 		float sectionProportions[] = { 1, 2, 1 };
 		glm::vec2 embrasureExpansion[] = { glm::vec2(0), glm::vec2(0), glm::vec2(0,-4) };
 
-		wall->subdivide(0, overhangPolicies, overhang, 3);
-		wall->children[1]->boundsExpand(railingExpansion);
-
-		wall->children[1]->repeat(1, SizePolicy::absoluteOuter, sectionLength);
-
-		for (architecture::Shape* section : wall->children[1]->children)
+		wall->subdivide(0, overhangNames, overhangPolicies, overhang, 2);
+		for (auto& railing : *wall->children["Railing"])
 		{
-			section->subdivide(1, sectionProportionPolicies, sectionProportions, 3);
-			section->children[1]->boundsExpand(embrasureExpansion);
+			railing->boundsExpand(railingExpansion);
+
+			railing->repeat(1, "Section", SizePolicy::absoluteOuter, sectionLength);
+
+			for (architecture::Shape* section : *railing->children["Section"])
+			{
+				section->subdivide(1, sectionProportionNames, sectionProportionPolicies, sectionProportions, 3);
+				for (auto& embrasure : * section->children["Embrasure"]) embrasure->boundsExpand(embrasureExpansion);
+			}
 		}
 	}
 
 	void castleOuterWall(Shape* wall)
 	{
+		std::string splitNames[] = { "Base", "Wall", "Battlement" };
 		SizePolicy splitPolicies[] = { SizePolicy::absoluteTrue,
 									   SizePolicy::relative,
 									   SizePolicy::absoluteTrue };
 		float splitSizes[] = { 5, 1, 5 };
-		wall->subdivide(2, splitPolicies, splitSizes, 3);
+		wall->subdivide(2, splitNames, splitPolicies, splitSizes, 3);
 
 		glm::vec2 baseExpansion[] = { glm::vec2(0, 2), glm::vec2(0), glm::vec2(0) };
-		wall->children[0]->boundsExpand(baseExpansion);
+		for (auto& base : *wall->children["Base"]) base->boundsExpand(baseExpansion);
 
-		castleWindows(wall->children[1]);
+		for (auto& vertWall : *wall->children["Wall"]) castleWindows(vertWall);
 
-		wall->children[2]->boundsExpand(baseExpansion);
-		castleBattlement(wall->children[2]);
+		for (auto& battlement : *wall->children["Battlement"])
+		{
+			battlement->boundsExpand(baseExpansion);
+			castleBattlement(battlement);
+		}
 	}
 }

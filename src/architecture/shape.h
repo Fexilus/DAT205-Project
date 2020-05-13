@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-//#include <unordered_map>
+#include <unordered_map>
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
@@ -38,7 +38,7 @@ namespace architecture
 		// The min and max bounds of the shape in the shape's coordinate system
 		glm::vec2 bounds[3];
 		// Child shapes
-		std::vector<Shape*> children;
+		std::unordered_map<std::string, std::vector<Shape*>*> children;
 		// Geometry resolution
 		// First this operation is done across all children
 		enum class ChildChildOperator { unite, intersect } childChildOp;
@@ -59,11 +59,11 @@ namespace architecture
 		void render();
 
 		// Operators
-		void subdivide(int axis, SizePolicy policies[], float sizeVals[], size_t numSubEl);
-		void subdivide(int axis, SizePolicy policies[], float sizeVals[], size_t numSubEl, int mask[]);
-		void repeat(int axis, SizePolicy policy, float sizeVal);
+		void subdivide(int axis, std::string names[], SizePolicy policies[], float sizeVals[], size_t numSubEl);
+		void subdivide(int axis, std::string names[], SizePolicy policies[], float sizeVals[], size_t numSubEl, int mask[]);
+		void repeat(int axis, std::string name, SizePolicy policy, float sizeVal);
 		void boundsExpand(glm::vec2 boundExpansions[3]);
-		void wrapCartesianOverCylindrical();
+		void wrapCartesianOverCylindrical(std::string name);
 
 	private:
 		// Utility functions
