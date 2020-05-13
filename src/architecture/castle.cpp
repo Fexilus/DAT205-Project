@@ -224,7 +224,7 @@ namespace architecture
 	{
 		std::vector<Shape*> segments;
 
-		wall->repeat(1, "Native Segment", SizePolicy::absoluteOuter, 18);
+		wall->repeat(1, "Native Segment", SizePolicy::absoluteOuter, 18, false);
 
 		if (wall->coordSys.type == CoordSysType::cartesian)
 		{

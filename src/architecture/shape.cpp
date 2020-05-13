@@ -126,18 +126,23 @@ namespace architecture
 				int resolution = 20;
 				
 				adjustPhiBounds();
-				float circleFrac = (bounds[1][1] - bounds[1][0]) / (2 * glm::pi<float>());
+				//float circleFrac = (bounds[1][1] - bounds[1][0]) / (2 * glm::pi<float>());
 
 				// TODO: Make complete circle at when end point is almost at begining point
-				int numCircNodes = ceil(resolution * circleFrac) + 1;
+				int startNode = ceil(bounds[1][0] / (2 * glm::pi<float>()) * resolution);
+				int endNode = floor(bounds[1][1] / (2 * glm::pi<float>()) * resolution);
+				int numCircNodes = endNode - startNode + 3;
 				std::vector<glm::vec3> circNodes(numCircNodes);
 
-				float phiStep = (bounds[1][1] - bounds[1][0]) / (float)(numCircNodes - 1);
+				float phiStep = 2 * glm::pi<float>() / resolution;
 
-				for (int i = 0; i < numCircNodes; ++i)
+				for (size_t i = 0; i < numCircNodes - 2; ++i)
 				{
-					circNodes[i] = cosf(bounds[1][0] + i * phiStep) * coordSys.bases[0] + sinf(bounds[1][0] + i * phiStep) * coordSys.bases[1];
+					circNodes[i+1] = cosf((startNode + i) * phiStep) * coordSys.bases[0] + sinf((startNode + i) * phiStep) * coordSys.bases[1];
 				}
+
+				circNodes[0] = cosf(bounds[1][0]) * coordSys.bases[0] + sinf(bounds[1][0]) * coordSys.bases[1];
+				circNodes[numCircNodes - 1] = cosf(bounds[1][1]) * coordSys.bases[0] + sinf(bounds[1][1]) * coordSys.bases[1];
 
 				// Nodes for wedge opening side
 				positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
@@ -337,7 +342,7 @@ namespace architecture
 		}
 	}
 
-	void Shape::repeat(int axis, std::string name, SizePolicy policy, float sizeVal)
+	void Shape::repeat(int axis, std::string name, SizePolicy policy, float sizeVal, int paddingMask /*= 1*/)
 	{
 		glm::vec2 newBounds[3];
 		newBounds[0] = bounds[0];
@@ -372,7 +377,7 @@ namespace architecture
 				children[name]->push_back(new Shape(coordSys, newBounds));
 			}
 
-			if (scale * nativePaddingVal > 0.0001)
+			if (scale * nativePaddingVal > 0.0001 && paddingMask)
 			{
 				glm::vec2 lowerPaddingBounds[3];
 				lowerPaddingBounds[0] = bounds[0];

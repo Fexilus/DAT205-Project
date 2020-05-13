@@ -61,7 +61,7 @@ namespace architecture
 		// Operators
 		void subdivide(int axis, std::string names[], SizePolicy policies[], float sizeVals[], size_t numSubEl);
 		void subdivide(int axis, std::string names[], SizePolicy policies[], float sizeVals[], size_t numSubEl, int mask[]);
-		void repeat(int axis, std::string name, SizePolicy policy, float sizeVal);
+		void repeat(int axis, std::string name, SizePolicy policy, float sizeVal, int paddingMask = true);
 		void boundsExpand(glm::vec2 boundExpansions[3]);
 		void wrapCartesianOverCylindrical(std::string name);
 
