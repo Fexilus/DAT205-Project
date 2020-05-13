@@ -457,7 +457,7 @@ namespace architecture
 
 		float oneSideYBounds = sinf(halfwayAngle - bounds[1][0]) * bounds[0][1];
 
-		glm::vec2 wrapBounds[3] = { glm::vec2(0, bounds[0][1]),
+		glm::vec2 wrapBounds[3] = { glm::vec2(bounds[0][0], bounds[0][1]),
 									glm::vec2(-oneSideYBounds, oneSideYBounds),
 									bounds[2] };
 

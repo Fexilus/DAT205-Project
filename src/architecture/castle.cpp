@@ -15,6 +15,8 @@ namespace architecture
 		float height = 40;
 		float radius = 20;
 		float wallThickness = 3;
+		float baseHeight = 5;
+		float ceilingThickness = 3;
 
 		// Create the tower structure
 		architecture::CoordSys cylinderCoordSys = { architecture::CoordSysType::cylindrical, origin, { glm::vec3(0,0,1), glm::vec3(1,0,0), glm::vec3(0,1,0) } };
@@ -26,15 +28,25 @@ namespace architecture
 		Shape* towerStructure = new architecture::Shape(cylinderCoordSys, cylinderBounds);
 
 		// Create inner room and walls
-		std::string roomNames[] = { "Room", "Wall" };
-		SizePolicy roomPolicies[] = { SizePolicy::relative,
+		std::string strucureNames[] = { "Room", "Wall" };
+		SizePolicy structurePolicies[] = { SizePolicy::relative,
 									  SizePolicy::absoluteTrue };
-		float roomSizes[] = { 1, wallThickness };
+		float strucureSizes[] = { 1, wallThickness };
 
-		towerStructure->subdivide(0, roomNames, roomPolicies, roomSizes, 2);
+		towerStructure->subdivide(0, strucureNames, structurePolicies, strucureSizes, 2);
 
 		// Adjust inner room
-		// towerStructure->children[0]->
+		std::string roomNames[] = { "Floor", "EMPTY", "Ceiling" };
+		SizePolicy roomPolicies[] = { SizePolicy::absoluteTrue,
+									  SizePolicy::relative,
+									  SizePolicy::absoluteTrue };
+		float roomSizes[] = { baseHeight, 1, ceilingThickness };
+		int roomMask[] = { 1, 0, 1 };
+
+		for (auto& room : *towerStructure->children["Room"])
+		{
+			room->subdivide(2, roomNames, roomPolicies, roomSizes, 3, roomMask);
+		}
 
 		// Ornate tower wall
 		for (auto& wall : *towerStructure->children["Wall"]) castleOuterWall(wall);
@@ -47,6 +59,8 @@ namespace architecture
 		float height = 40;
 		float radius = 20;
 		float wallThickness = 3;
+		float baseHeight = 5;
+		float ceilingThickness = 3;
 
 		glm::vec3 upDir(0, 1, 0);
 
@@ -93,15 +107,25 @@ namespace architecture
 		Shape* towerStructure = new architecture::Shape(cylinderCoordSys, cylinderBounds);
 
 		// Create inner room and walls
-		std::string roomNames[] = { "Room", "Wall" };
-		SizePolicy roomPolicies[] = { SizePolicy::relative,
+		std::string strucureNames[] = { "Room", "Wall" };
+		SizePolicy structurePolicies[] = { SizePolicy::relative,
 									  SizePolicy::absoluteTrue };
-		float roomSizes[] = { 1, wallThickness };
+		float strucureSizes[] = { 1, wallThickness };
 
-		towerStructure->subdivide(0, roomNames, roomPolicies, roomSizes, 2);
+		towerStructure->subdivide(0, strucureNames, structurePolicies, strucureSizes, 2);
 
 		// Adjust inner room
-		// towerStructure->children[0]->
+		std::string roomNames[] = { "Floor", "EMPTY", "Ceiling" };
+		SizePolicy roomPolicies[] = { SizePolicy::absoluteTrue,
+									  SizePolicy::relative,
+									  SizePolicy::absoluteTrue };
+		float roomSizes[] = { baseHeight, 1, ceilingThickness };
+		int roomMask[] = { 1, 0, 1 };
+
+		for (auto& room : *towerStructure->children["Room"])
+		{
+			room->subdivide(2, roomNames, roomPolicies, roomSizes, 3, roomMask);
+		}
 
 		// Split wall for connectors
 		std::vector<std::string> connectorSplitNames(2 * numConnectors, "Wall Part");
@@ -130,6 +154,8 @@ namespace architecture
 		float wallHeight = 40;
 		float wallDepth = 10;
 		float wallThickness = 3;
+		float baseHeight = 5;
+		float ceilingThickness = 3;
 
 		glm::vec3 upDir(0, 1, 0);
 
@@ -145,13 +171,13 @@ namespace architecture
 		Shape* wallStructure = new architecture::Shape(blockCoordSys, blockBounds);
 
 		// Create inner room and walls
-		std::string roomNames[] = { "Reverse Wall", "Room", "Wall" };
-		SizePolicy roomPolicies[] = { SizePolicy::absoluteTrue,
-									  SizePolicy::relative,
-									  SizePolicy::absoluteTrue };
-		float roomSizes[] = { wallThickness, 1, wallThickness };
+		std::string structureNames[] = { "Reverse Wall", "Room", "Wall" };
+		SizePolicy structurePolicies[] = { SizePolicy::absoluteTrue,
+									       SizePolicy::relative,
+									       SizePolicy::absoluteTrue };
+		float structureSizes[] = { wallThickness, 1, wallThickness };
 
-		wallStructure->subdivide(0, roomNames, roomPolicies, roomSizes, 3);
+		wallStructure->subdivide(0, structureNames, structurePolicies, structureSizes, 3);
 
 		// Rotate coordinate system of back wall so that x points outwards
 		// TODO: Separate into separate system
@@ -165,6 +191,19 @@ namespace architecture
 			glm::vec2 oldYBounds = reverseWall->bounds[1];
 			reverseWall->bounds[1][0] = -1 * oldYBounds[1];
 			reverseWall->bounds[1][1] = -1 * oldYBounds[0];
+		}
+
+		// Adjust inner room
+		std::string roomNames[] = { "Floor", "EMPTY", "Ceiling" };
+		SizePolicy roomPolicies[] = { SizePolicy::absoluteTrue,
+									  SizePolicy::relative,
+									  SizePolicy::absoluteTrue };
+		float roomSizes[] = { baseHeight, 1, ceilingThickness };
+		int roomMask[] = { 1, 0, 1 };
+
+		for (auto& room : *wallStructure->children["Room"])
+		{
+			room->subdivide(2, roomNames, roomPolicies, roomSizes, 3, roomMask);
 		}
 
 		// Ornate walls
