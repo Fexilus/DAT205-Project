@@ -113,20 +113,29 @@ std::vector<architecture::Shape*> walls;
 architecture::Shape* tower;
 architecture::Shape* wall;
 
+///////////////////////////////////////////////////////////////////////////////
+// Procedural generation
+///////////////////////////////////////////////////////////////////////////////
+bool drawIds = false;
+
 void loadShaders(bool is_reload)
 {
 	GLuint shader = labhelper::loadShaderProgram("../project/simple.vert", "../project/simple.frag", is_reload);
 	if(shader != 0) simpleShaderProgram = shader;
 	shader = labhelper::loadShaderProgram("../project/background.vert", "../project/background.frag", is_reload);
 	if(shader != 0) backgroundProgram = shader;
-	shader = labhelper::loadShaderProgram("../project/shading.vert", "../project/shading.frag", is_reload);
-	if(shader != 0) shaderProgram = shader;
 	shader = labhelper::loadShaderProgram("../project/ssaoInput.vert", "../project/ssaoInput.frag", is_reload);
 	if (shader != 0) ssaoInputProgram = shader;
 	shader = labhelper::loadShaderProgram("../project/ssaoOutput.vert", "../project/ssaoOutput.frag", is_reload);
 	if (shader != 0) ssaoOutputProgram = shader;
 	shader = labhelper::loadShaderProgram("../project/ssaoOutput.vert", "../project/ssaoBlur.frag", is_reload);
 	if (shader != 0) ssaoBlurProgram = shader;
+
+	std::vector<std::string> mainFragmentShaders;
+	mainFragmentShaders.push_back("../project/shading.frag");
+	mainFragmentShaders.push_back("../src/mousepicking/picking.frag");
+	shader = labhelper::loadMultiShaderProgram("../project/shading.vert", mainFragmentShaders, is_reload);
+	if (shader != 0) shaderProgram = shader;
 }
 
 void initSsaoSamples()
@@ -300,12 +309,19 @@ void drawScene(GLuint currentShaderProgram,
 	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
 		inverse(transpose(viewMatrix)));
 
+	int id = 0;
 	for (architecture::Shape* wall : walls)
 	{
+		labhelper::setUniformSlow(currentShaderProgram, "object_id", id);
 		wall->render();
+		++id;
 	}
+	labhelper::setUniformSlow(currentShaderProgram, "object_id", id);
 	tower->render();
+	++id;
+	labhelper::setUniformSlow(currentShaderProgram, "object_id", id);
 	wall->render();
+	++id;
 }
 
 
@@ -429,6 +445,7 @@ void display(void)
 	glUseProgram(shaderProgram);
 	glUniform1i(glGetUniformLocation(shaderProgram, "drawSsao"), drawSsao);
 	glUniform1i(glGetUniformLocation(shaderProgram, "useSsao"), useSsao);
+	glUniform1i(glGetUniformLocation(shaderProgram, "drawId"), drawIds);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, windowWidth, windowHeight);
@@ -533,6 +550,12 @@ void gui()
 		ImGui::Checkbox("Use blur pass", &useSsaoBlur);
 	}
 
+	// Picking options
+	if (ImGui::CollapsingHeader("Mouse Picking", ImGuiTreeNodeFlags_Framed + ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("Draw object ids", &drawIds);
+	}
+
 	// Reload shaders
 	if (ImGui::Button("Reload Shaders")) {
 		loadShaders(true);
@@ -540,8 +563,9 @@ void gui()
 
 	// ----------------- Set variables --------------------------
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
-	            ImGui::GetIO().Framerate);
+		ImGui::GetIO().Framerate);
 	// ----------------------------------------------------------
+
 	// Render the GUI.
 	ImGui::Render();
 }

@@ -56,9 +56,19 @@ uniform bool useSsao;
 layout(binding = 3) uniform sampler2D ambientOcclusionMap;
 
 ///////////////////////////////////////////////////////////////////////////////
+// Mouse picking
+///////////////////////////////////////////////////////////////////////////////
+uniform bool drawId;
+
+///////////////////////////////////////////////////////////////////////////////
 // Output color
 ///////////////////////////////////////////////////////////////////////////////
 layout(location = 0) out vec4 fragmentColor;
+
+///////////////////////////////////////////////////////////////////////////////
+// External functions
+///////////////////////////////////////////////////////////////////////////////
+vec4 pick_test();
 
 
 vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
@@ -167,6 +177,12 @@ vec3 calculateIndirectIllumination(vec3 wo, vec3 n, vec3 base_color)
 
 void main()
 {
+
+	if(drawId)
+	{
+		fragmentColor.xyz = pick_test().xyz;
+		return;
+	}
 	///////////////////////////////////////////////////////////////////////////
 	// Task 1.1 - Fill in the outgoing direction, wo, and the normal, n. Both
 	//            shall be normalized vectors in view-space.
@@ -204,7 +220,7 @@ void main()
 	///////////////////////////////////////////////////////////////////////////
 	vec3 emission_term = material_emission * material_color;
 
-	vec3 final_color = /*direct_illumination_term + */indirect_illumination_term /*+ emission_term*/;
+	vec3 final_color = /*direct_illumination_term +*/ indirect_illumination_term + emission_term;
 
 	// Check if we got invalid results in the operations
 	if(any(isnan(final_color)))

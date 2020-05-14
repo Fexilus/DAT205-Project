@@ -20,5 +20,5 @@ add_executable ( ${PROJECT_NAME}
     ${SHADERS}
     )
 
-target_link_libraries ( ${PROJECT_NAME} labhelper architecture)
+target_link_libraries ( ${PROJECT_NAME} labhelper architecture mousepicking)
 config_build_output()

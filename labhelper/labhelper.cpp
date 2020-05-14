@@ -35,10 +35,12 @@
 #include <glm/glm.hpp>
 #include <imgui.h>
 #include "imgui_impl_sdl_gl3.h"
+#include <range.hpp>
 
 //#define HDR_FRAMEBUFFER
 
 using std::vector; 
+using util::lang::indices;
 
 namespace labhelper {
 
@@ -472,6 +474,84 @@ namespace labhelper {
 		GLuint shaderProgram = glCreateProgram();
 		glAttachShader(shaderProgram, fShader);
 		glDeleteShader(fShader);
+		glAttachShader(shaderProgram, vShader);
+		glDeleteShader(vShader);
+		if (!allow_errors) CHECK_GL_ERROR();
+
+		if (!linkShaderProgram(shaderProgram, allow_errors)) return 0;
+
+		return shaderProgram;
+	}
+
+	GLuint loadMultiShaderProgram(const std::string& vertexShader, std::vector<std::string> fragmentShaders, bool allow_errors)
+	{
+		GLuint vShader = glCreateShader(GL_VERTEX_SHADER);
+		std::vector<GLuint> fShaders;
+		for (auto& fragmentShader : fragmentShaders)
+		{
+			GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
+			fShaders.push_back(fshader);
+		}
+
+		std::ifstream vs_file(vertexShader);
+		std::string vs_src((std::istreambuf_iterator<char>(vs_file)), std::istreambuf_iterator<char>());
+
+		std::vector<std::string> fs_srcs;
+		for (auto& fragmentShader : fragmentShaders)
+		{
+			std::ifstream fs_file(fragmentShader);
+			std::string fs_src((std::istreambuf_iterator<char>(fs_file)), std::istreambuf_iterator<char>());
+			fs_srcs.push_back(fs_src);
+		}
+
+		const char* vs = vs_src.c_str();
+		glShaderSource(vShader, 1, &vs, nullptr);
+		for (auto i : indices(fs_srcs))
+		{
+			const char* fs = fs_srcs[i].c_str();
+			glShaderSource(fShaders[i], 1, &fs, nullptr);
+		}
+		
+		// text data is not needed beyond this point
+
+		glCompileShader(vShader);
+		int compileOk = 0;
+		glGetShaderiv(vShader, GL_COMPILE_STATUS, &compileOk);
+		if (!compileOk)
+		{
+			std::string err = GetShaderInfoLog(vShader);
+			if (allow_errors) {
+				non_fatal_error(err, "Vertex Shader");
+			}
+			else {
+				fatal_error(err, "Vertex Shader");
+			}
+			return 0;
+		}
+
+		for (auto& fShader : fShaders)
+		{
+			glCompileShader(fShader);
+			glGetShaderiv(fShader, GL_COMPILE_STATUS, &compileOk);
+			if (!compileOk)
+			{
+				std::string err = GetShaderInfoLog(fShader);
+				if (allow_errors) {
+					non_fatal_error(err, "Fragment Shader");
+				}
+				else {
+					fatal_error(err, "Fragment Shader");
+				}
+				return 0;
+			}
+		}
+
+		GLuint shaderProgram = glCreateProgram();
+		for (auto& fShader : fShaders)
+		{
+			glAttachShader(shaderProgram, fShader);
+			glDeleteShader(fShader);
+		}
 		glAttachShader(shaderProgram, vShader);
 		glDeleteShader(vShader);
 		if (!allow_errors) CHECK_GL_ERROR();

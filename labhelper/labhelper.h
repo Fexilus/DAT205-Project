@@ -7,6 +7,8 @@
 
 #include <glm/glm.hpp>
 
+#include <vector>
+
 #include <string>
 #include <cassert>
 
@@ -99,6 +101,7 @@ namespace labhelper {
 	 * glBindAttribLocation and fragment data lications, using glBindFragDataLocation.
 	 */
 	GLuint loadShaderProgram(const std::string &vertexShader, const std::string &fragmentShader, bool allow_errors = false);
+	GLuint loadMultiShaderProgram(const std::string& vertexShader, std::vector<std::string> fragmentShaders, bool allow_errors);
 	/**
 	 * Call to link a shader program prevoiusly loaded using loadShaderProgram.
 	 */

@@ -34,6 +34,7 @@ target_include_directories( labhelper
     ${CMAKE_SOURCE_DIR}/labhelper
     ${CMAKE_SOURCE_DIR}/external_src/stb-master
     ${CMAKE_SOURCE_DIR}/external_src/tinyobjloader-1.0.6
+    ${CMAKE_SOURCE_DIR}/external_src/cpp11-range
     ${SDL2_INCLUDE_DIRS}
     ${GLM_INCLUDE_DIRS}
     ${GLEW_INCLUDE_DIRS}
