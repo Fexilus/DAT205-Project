@@ -8,6 +8,7 @@ extern "C" _declspec(dllexport) unsigned int NvOptimusEnablement = 0x00000001;
 #include <cstdlib>
 #include <algorithm>
 #include <chrono>
+#include <unordered_map>
 
 #include <labhelper.h>
 #include <imgui.h>
@@ -109,9 +110,8 @@ float ssaoRadius = 3.0f;
 ///////////////////////////////////////////////////////////////////////////////
 // Procedural generation
 ///////////////////////////////////////////////////////////////////////////////
-std::vector<architecture::Shape*> walls;
-architecture::Shape* tower;
-architecture::Shape* wall;
+std::unordered_map<int, architecture::Shape*> proceduralObjects;
+int proceduralFreeId = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Procedural generation
@@ -151,22 +151,22 @@ void generateGeometry()
 {
 	// Main castle walls
 	vec3 wallNodes[] = { vec3(-80,0,0), vec3(130,0,30), vec3(200,0,70), vec3(240,0,0) };
-	walls = architecture::makeWalls(wallNodes, 4);
-
-	for(architecture::Shape* wall : walls)
+	for (auto& object : architecture::makeWalls(wallNodes, 4))
 	{
-		wall->init();
+		proceduralObjects[proceduralFreeId++] = object;
 	}
 
 	// Tower test
-	tower = architecture::makeTower(vec3(0,0,50));
-	
-	tower->init();
+	proceduralObjects[proceduralFreeId++] = architecture::makeTower(vec3(0,0,50));
 
 	// Wall test
-	wall = architecture::makeWall(vec3(0, 0, 90), vec3(80, 0, 100));
+	proceduralObjects[proceduralFreeId++] = architecture::makeWall(vec3(0, 0, 90), vec3(80, 0, 100));
 
-	wall->init();
+	// Init geometry
+	for (auto& object : proceduralObjects)
+	{
+		object.second->init();
+	}
 }
 
 void initGL()
@@ -309,19 +309,11 @@ void drawScene(GLuint currentShaderProgram,
 	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
 		inverse(transpose(viewMatrix)));
 
-	int id = 0;
-	for (architecture::Shape* wall : walls)
+	for (auto& object : proceduralObjects)
 	{
-		labhelper::setUniformSlow(currentShaderProgram, "object_id", id);
-		wall->render();
-		++id;
+		labhelper::setUniformSlow(currentShaderProgram, "object_id", object.first);
+		object.second->render();
 	}
-	labhelper::setUniformSlow(currentShaderProgram, "object_id", id);
-	tower->render();
-	++id;
-	labhelper::setUniformSlow(currentShaderProgram, "object_id", id);
-	wall->render();
-	++id;
 }
 
 

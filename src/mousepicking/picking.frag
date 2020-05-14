@@ -37,7 +37,7 @@ vec3 hslToRgb(float h, float s, float l)
     return vec3(r, g, b);
 }
 
-vec4 pick_test() 
+vec4 id_color() 
 {
     vec3 id_color = hslToRgb(((object_id * 11) % 255)/255.0, 175.0/255.0, 175.0/255.0);
 	return vec4(id_color, 1.0);

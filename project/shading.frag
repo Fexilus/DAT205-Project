@@ -68,7 +68,7 @@ layout(location = 0) out vec4 fragmentColor;
 ///////////////////////////////////////////////////////////////////////////////
 // External functions
 ///////////////////////////////////////////////////////////////////////////////
-vec4 pick_test();
+vec4 id_color();
 
 
 vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
@@ -180,7 +180,7 @@ void main()
 
 	if(drawId)
 	{
-		fragmentColor.xyz = pick_test().xyz;
+		fragmentColor.xyz = id_color().xyz;
 		return;
 	}
 	///////////////////////////////////////////////////////////////////////////
