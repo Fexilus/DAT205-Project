@@ -615,6 +615,11 @@ namespace labhelper {
 		int loc = glGetUniformLocation(shaderProgram, name);
 		glUniform1i(loc, value);
 	}
+	void setUniformSlow(GLuint shaderProgram, const char* name, const GLuint value)
+	{
+		int loc = glGetUniformLocation(shaderProgram, name);
+		glUniform1ui(loc, value);
+	}
 	void setUniformSlow(GLuint shaderProgram, const char *name, const glm::vec3 &value)
 	{
 		glUniform3fv(glGetUniformLocation(shaderProgram, name), 1, &value.x);

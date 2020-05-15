@@ -3,7 +3,10 @@
 // required by GLSL spec Sect 4.5.3 (though nvidia does not, amd does)
 precision highp float;
 
-uniform int object_id;
+uniform uint objectId;
+uniform uint pickedId;
+
+layout(location = 1) out uint fragmentId;
 
 float hue2rgb(float p, float q, float t)
 {
@@ -37,8 +40,18 @@ vec3 hslToRgb(float h, float s, float l)
     return vec3(r, g, b);
 }
 
-vec4 id_color() 
+vec4 id_debug() 
 {
-    vec3 id_color = hslToRgb(((object_id * 11) % 255)/255.0, 175.0/255.0, 175.0/255.0);
-	return vec4(id_color, 1.0);
+    vec3 idColor = hslToRgb(float((objectId * 11) % 255)/255.0, 175.0/255.0, 175.0/255.0);
+	return vec4(idColor, 1.0);
+}
+
+void render_picking()
+{
+	fragmentId = objectId;
+}
+
+bool picked()
+{
+	return pickedId == objectId;
 }

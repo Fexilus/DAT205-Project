@@ -68,7 +68,9 @@ layout(location = 0) out vec4 fragmentColor;
 ///////////////////////////////////////////////////////////////////////////////
 // External functions
 ///////////////////////////////////////////////////////////////////////////////
-vec4 id_color();
+vec4 id_debug();
+void render_picking();
+bool picked();
 
 
 vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
@@ -177,10 +179,11 @@ vec3 calculateIndirectIllumination(vec3 wo, vec3 n, vec3 base_color)
 
 void main()
 {
+	render_picking();
 
 	if(drawId)
 	{
-		fragmentColor.xyz = id_color().xyz;
+		fragmentColor.xyz = id_debug().xyz;
 		return;
 	}
 	///////////////////////////////////////////////////////////////////////////
@@ -218,7 +221,7 @@ void main()
 	///////////////////////////////////////////////////////////////////////////
 	// Task 1.4 - Make glowy things glow!
 	///////////////////////////////////////////////////////////////////////////
-	vec3 emission_term = material_emission * material_color;
+	vec3 emission_term = material_emission * material_color + int(picked()) * vec3(0.5, 0, 0);
 
 	vec3 final_color = /*direct_illumination_term +*/ indirect_illumination_term + emission_term;
 

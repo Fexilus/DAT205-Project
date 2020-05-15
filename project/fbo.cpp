@@ -1,12 +1,23 @@
 #include "fbo.h"
 #include <cstdint>
 #include <labhelper.h>
+#include <range.hpp>
 
-FboInfo::FboInfo(int numberOfColorBuffers)
+using util::lang::indices;
+
+FboInfo::FboInfo(int numberOfColorBuffers, GLint colorBufferFormat)
     : isComplete(false), framebufferId(UINT32_MAX), depthBuffer(UINT32_MAX), width(0), height(0)
 {
 	colorTextureTargets.resize(numberOfColorBuffers, UINT32_MAX);
+	colorTextureTargetFormats = std::vector<GLint>(numberOfColorBuffers, colorBufferFormat);
 };
+
+FboInfo::FboInfo(int numberOfColorBuffers, GLint colorBufferFormats[])
+	: isComplete(false), framebufferId(UINT32_MAX), depthBuffer(UINT32_MAX), width(0), height(0)
+{
+	colorTextureTargets.resize(numberOfColorBuffers, UINT32_MAX);
+	colorTextureTargetFormats = std::vector<GLint>(colorBufferFormats, colorBufferFormats + numberOfColorBuffers);
+}
 
 void FboInfo::resize(int w, int h)
 {
@@ -40,10 +51,17 @@ void FboInfo::resize(int w, int h)
 	///////////////////////////////////////////////////////////////////////
 	// Allocate / Resize textures
 	///////////////////////////////////////////////////////////////////////
-	for(auto& colorTextureTarget : colorTextureTargets)
+	for (auto i : indices(colorTextureTargets))
 	{
-		glBindTexture(GL_TEXTURE_2D, colorTextureTarget);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		glBindTexture(GL_TEXTURE_2D, colorTextureTargets[i]);
+		if (colorTextureTargetFormats[i] == GL_R32UI)
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, colorTextureTargetFormats[i], width, height, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+		}
+		else
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, colorTextureTargetFormats[i], width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		}
 	}
 
 	glBindTexture(GL_TEXTURE_2D, depthBuffer);

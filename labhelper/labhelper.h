@@ -124,6 +124,7 @@ namespace labhelper {
 	void setUniformSlow(GLuint shaderProgram, const char *name, const glm::mat4 &matrix);
 	void setUniformSlow(GLuint shaderProgram, const char *name, const float value);
 	void setUniformSlow(GLuint shaderProgram, const char *name, const GLint value);
+	void setUniformSlow(GLuint shaderProgram, const char* name, const GLuint value);
 	void setUniformSlow(GLuint shaderProgram, const char *name, const glm::vec3 &value);
 	void setUniformSlow(GLuint shaderProgram, const char *name, const uint32_t nof_values, const glm::vec3 * values);
 

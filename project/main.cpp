@@ -1,4 +1,4 @@
-
+﻿
 #ifdef _WIN32
 extern "C" _declspec(dllexport) unsigned int NvOptimusEnablement = 0x00000001;
 #endif
@@ -110,13 +110,16 @@ float ssaoRadius = 3.0f;
 ///////////////////////////////////////////////////////////////////////////////
 // Procedural generation
 ///////////////////////////////////////////////////////////////////////////////
-std::unordered_map<int, architecture::Shape*> proceduralObjects;
-int proceduralFreeId = 0;
+std::unordered_map<uint, architecture::Shape*> proceduralObjects;
+uint proceduralFreeId = 1;
 
 ///////////////////////////////////////////////////////////////////////////////
-// Procedural generation
+// Mouse picking
 ///////////////////////////////////////////////////////////////////////////////
 bool drawIds = false;
+int pickedID = 0;
+int mouseX, mouseY = 0;
+FboInfo finalFB;
 
 void loadShaders(bool is_reload)
 {
@@ -200,6 +203,9 @@ void initGL()
 	ssaoInputFB.resize(windowWidth, windowHeight);
 	ssaoOutputFB.resize(windowWidth, windowHeight);
 	ssaoBlurFB.resize(windowWidth, windowHeight);
+	GLint finalTextureFormats[] = { GL_RGBA16F, GL_R32UI };
+	finalFB = FboInfo(2, finalTextureFormats);
+	finalFB.resize(windowWidth, windowHeight);
 
 	///////////////////////////////////////////////////////////////////////
 	// Load models and set up model matrices
@@ -311,7 +317,7 @@ void drawScene(GLuint currentShaderProgram,
 
 	for (auto& object : proceduralObjects)
 	{
-		labhelper::setUniformSlow(currentShaderProgram, "object_id", object.first);
+		labhelper::setUniformSlow(currentShaderProgram, "objectId", object.first);
 		object.second->render();
 	}
 }
@@ -332,6 +338,7 @@ void display(void)
 			ssaoInputFB.resize(windowWidth, windowHeight);
 			ssaoOutputFB.resize(windowWidth, windowHeight);
 			ssaoBlurFB.resize(windowWidth, windowHeight);
+			finalFB.resize(windowWidth, windowHeight);
 		}
 	}
 
@@ -438,8 +445,9 @@ void display(void)
 	glUniform1i(glGetUniformLocation(shaderProgram, "drawSsao"), drawSsao);
 	glUniform1i(glGetUniformLocation(shaderProgram, "useSsao"), useSsao);
 	glUniform1i(glGetUniformLocation(shaderProgram, "drawId"), drawIds);
+	glUniform1ui(glGetUniformLocation(shaderProgram, "pickedId"), pickedID);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, finalFB.framebufferId);
 	glViewport(0, 0, windowWidth, windowHeight);
 	glClearColor(0.2, 0.2, 0.8, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -447,10 +455,18 @@ void display(void)
 	//drawBackground(viewMatrix, projMatrix);
 	drawScene(shaderProgram, viewMatrix, projMatrix, lightViewMatrix, lightProjMatrix);
 	//debugDrawLight(viewMatrix, projMatrix, vec3(lightPosition));
+
+	// Blit final screen to default frame buffer
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
 }
 
 bool handleEvents(void)
 {
+	SDL_GetMouseState(&mouseX, &mouseY);
+
 	// check events (keyboard among other)
 	SDL_Event event;
 	bool quitEvent = false;
@@ -468,11 +484,9 @@ bool handleEvents(void)
 		   && (!showUI || !ImGui::GetIO().WantCaptureMouse))
 		{
 			g_isMouseDragging = true;
-			int x;
-			int y;
-			SDL_GetMouseState(&x, &y);
-			g_prevMouseCoords.x = x;
-			g_prevMouseCoords.y = y;
+			
+			g_prevMouseCoords.x = mouseX;
+			g_prevMouseCoords.y = mouseY;
 		}
 
 		if(!(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_RIGHT)))
@@ -522,6 +536,22 @@ bool handleEvents(void)
 	{
 		cameraPosition += cameraSpeed * deltaTime * worldUp;
 	}
+	//*
+	{
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, finalFB.framebufferId);
+		{
+			glReadBuffer(GL_COLOR_ATTACHMENT1);
+
+			uint pixel;
+			glReadPixels(mouseX, windowHeight - mouseY, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &pixel);
+
+			pickedID = pixel;
+		}
+		// Reset stuff
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+	//*/
 	return quitEvent;
 }
 
@@ -546,6 +576,8 @@ void gui()
 	if (ImGui::CollapsingHeader("Mouse Picking", ImGuiTreeNodeFlags_Framed + ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::Checkbox("Draw object ids", &drawIds);
+		ImGui::Text("Mouse position X: %i, Y: %i", mouseX, mouseY);
+		ImGui::Text("Picked id: %i", pickedID);
 	}
 
 	// Reload shaders
