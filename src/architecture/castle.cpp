@@ -75,6 +75,9 @@ namespace architecture
 		}
 
 		std::vector<float> angleWidths;
+		std::vector<std::string> connectorSplitNames;
+		std::vector<SizePolicy> connectorSplitPolicies;
+		std::vector<int> splitMask;
 		if (numConnectors > 1)
 		{
 			for (int i = 0; i < numConnectors; ++i)
@@ -88,14 +91,38 @@ namespace architecture
 				wallAngle -= (connectorAngleWidths[i] + connectorAngleWidths[(i + 1) % numConnectors]) / 2.0;
 
 				// TODO: Ineffective to have connector values in two parts of memory
-				angleWidths.push_back(connectorAngleWidths[i]);
-				angleWidths.push_back(wallAngle);
+				if (wallAngle >= 0)
+				{
+					angleWidths.push_back(connectorAngleWidths[i]);
+					connectorSplitNames.push_back("Connector");
+					connectorSplitPolicies.push_back(SizePolicy::absoluteTrue);
+					splitMask.push_back(0);
+
+					angleWidths.push_back(wallAngle);
+					connectorSplitNames.push_back("Wall Part");
+					connectorSplitPolicies.push_back(SizePolicy::absoluteTrue);
+					splitMask.push_back(1);
+				}
+				else
+				{
+					angleWidths.push_back(connectorAngleWidths[i] - wallAngle);
+					connectorSplitNames.push_back("Connector");
+					connectorSplitPolicies.push_back(SizePolicy::absoluteTrue);
+					splitMask.push_back(0);
+				}
 			}
 		}
 		else
 		{
 			angleWidths.push_back(connectorAngleWidths[0]);
+			connectorSplitNames.push_back("Connector");
+			connectorSplitPolicies.push_back(SizePolicy::absoluteTrue);
+			splitMask.push_back(0);
+
 			angleWidths.push_back(2 * glm::pi<float>() - connectorAngleWidths[0]);
+			connectorSplitNames.push_back("Wall Part");
+			connectorSplitPolicies.push_back(SizePolicy::absoluteTrue);
+			splitMask.push_back(1);
 		}
 
 		glm::vec3 rDir = glm::rotate(glm::normalize(connectorDirs[0]), -connectorAngleWidths[0] / 2.0f, upDir);
@@ -132,17 +159,9 @@ namespace architecture
 		}
 
 		// Split wall for connectors
-		std::vector<std::string> connectorSplitNames(2 * numConnectors, "Wall Part");
-		std::vector<SizePolicy> connectorSplitPolicies(2 * numConnectors, SizePolicy::absoluteTrue);
-		std::vector<int> splitMask(2 * numConnectors, 1);
-		for (size_t i = 0; i < numConnectors; ++i)
-		{
-			splitMask[2*i] = 0;
-		}
-
 		for (auto& wall : *towerStructure->children["Wall"])
 		{
-			wall->subdivide(1, connectorSplitNames.data(), connectorSplitPolicies.data(), angleWidths.data(), 2 * numConnectors, splitMask.data());
+			wall->subdivide(1, connectorSplitNames.data(), connectorSplitPolicies.data(), angleWidths.data(), angleWidths.size(), splitMask.data());
 
 			for (Shape* wallPart : *wall->children["Wall Part"])
 			{
