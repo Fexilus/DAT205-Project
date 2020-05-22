@@ -23,6 +23,7 @@ using namespace glm;
 #include "fbo.h"
 
 #include <castle.h>
+#include <picking.h>
 
 using std::min;
 using std::max;
@@ -40,6 +41,8 @@ int windowWidth, windowHeight;
 // Mouse input
 ivec2 g_prevMouseCoords = { -1, -1 };
 bool g_isMouseDragging = false;
+bool g_isMouseDraggingLeft = false;
+bool g_isMouseDraggingRight = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Shader programs
@@ -117,9 +120,15 @@ uint proceduralFreeId = 1;
 // Mouse picking
 ///////////////////////////////////////////////////////////////////////////////
 bool drawIds = false;
+int hoverID = 0;
+float hoverDepth = 0;
 int pickedID = 0;
+float pickedDepth = 0;
+vec3 pickedModelCoord;
 int mouseX, mouseY = 0;
 FboInfo finalFB;
+
+vec3 pickedMovement(0);
 
 void loadShaders(bool is_reload)
 {
@@ -308,16 +317,19 @@ void drawScene(GLuint currentShaderProgram,
 	*/
 
 	// Castle
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
-		projectionMatrix * viewMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix", 
-		viewMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
-		inverse(transpose(viewMatrix)));
 
 	for (auto& object : proceduralObjects)
 	{
 		labhelper::setUniformSlow(currentShaderProgram, "objectId", object.first);
+
+		mat4 modelMatrix = object.first == pickedID ? translate(pickedMovement) : mat4(1.0f);
+		labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
+			projectionMatrix * viewMatrix * modelMatrix);
+		labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix",
+			viewMatrix * modelMatrix);
+		labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
+			inverse(transpose(viewMatrix * modelMatrix)));
+
 		object.second->render();
 	}
 }
@@ -445,6 +457,7 @@ void display(void)
 	glUniform1i(glGetUniformLocation(shaderProgram, "drawSsao"), drawSsao);
 	glUniform1i(glGetUniformLocation(shaderProgram, "useSsao"), useSsao);
 	glUniform1i(glGetUniformLocation(shaderProgram, "drawId"), drawIds);
+	glUniform1ui(glGetUniformLocation(shaderProgram, "hoverId"), hoverID);
 	glUniform1ui(glGetUniformLocation(shaderProgram, "pickedId"), pickedID);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, finalFB.framebufferId);
@@ -463,9 +476,21 @@ void display(void)
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
 }
 
+void rotateCamera(int deltaX, int deltaY)
+{
+	mat4 yaw = rotate(cameraRotationSpeed * deltaTime * -deltaX, worldUp);
+	mat4 pitch = rotate(cameraRotationSpeed * deltaTime * -deltaY,
+		normalize(cross(cameraDirection, worldUp)));
+	cameraDirection = vec3(pitch * yaw * vec4(cameraDirection, 0.0f));
+}
+
 bool handleEvents(void)
 {
 	SDL_GetMouseState(&mouseX, &mouseY);
+
+	mat4 projMatrix = perspective(radians(45.0f), float(windowWidth) / float(windowHeight), 5.0f, 2000.0f);
+	mat4 viewMatrix = lookAt(cameraPosition, cameraPosition + cameraDirection, worldUp);
+	vec4 viewport(0.0f, 0.0f, windowWidth, windowHeight);
 
 	// check events (keyboard among other)
 	SDL_Event event;
@@ -480,16 +505,34 @@ bool handleEvents(void)
 		{
 			showUI = !showUI;
 		}
-		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT
+		if(event.type == SDL_MOUSEBUTTONDOWN && 
+		   (event.button.button == SDL_BUTTON_RIGHT || event.button.button == SDL_BUTTON_LEFT)
 		   && (!showUI || !ImGui::GetIO().WantCaptureMouse))
 		{
 			g_isMouseDragging = true;
-			
 			g_prevMouseCoords.x = mouseX;
 			g_prevMouseCoords.y = mouseY;
+
+			if (event.button.button == SDL_BUTTON_RIGHT) g_isMouseDraggingRight = true;
+			if (event.button.button == SDL_BUTTON_LEFT)
+			{
+				pickedID = hoverID;
+				pickedDepth = hoverDepth;
+				vec2 pickedScreenCoords = vec2(g_prevMouseCoords.x, windowHeight - 1.0f - g_prevMouseCoords.y);
+				pickedModelCoord = glm::unProject(vec3(pickedScreenCoords, pickedDepth), viewMatrix, projMatrix, viewport);
+				g_isMouseDraggingLeft = true;
+			}
 		}
 
 		if(!(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_RIGHT)))
+		{
+			g_isMouseDraggingRight = false;
+		}
+		if (!(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT)))
+		{
+			g_isMouseDraggingLeft = false;
+		}
+		if (!(g_isMouseDraggingRight || g_isMouseDraggingLeft))
 		{
 			g_isMouseDragging = false;
 		}
@@ -499,10 +542,14 @@ bool handleEvents(void)
 			// More info at https://wiki.libsdl.org/SDL_MouseMotionEvent
 			int delta_x = event.motion.x - g_prevMouseCoords.x;
 			int delta_y = event.motion.y - g_prevMouseCoords.y;
-			mat4 yaw = rotate(cameraRotationSpeed * deltaTime * -delta_x, worldUp);
-			mat4 pitch = rotate(cameraRotationSpeed * deltaTime * -delta_y,
-			                    normalize(cross(cameraDirection, worldUp)));
-			cameraDirection = vec3(pitch * yaw * vec4(cameraDirection, 0.0f));
+			if (g_isMouseDraggingRight) rotateCamera(delta_x, delta_y);
+			if (g_isMouseDraggingLeft)
+			{
+				vec2 newScreenCoords = vec2(event.motion.x, windowHeight - 1.0f - event.motion.y);
+
+				vec3 modelSpaceMovement = mousepicking::moveAlongPlane(pickedModelCoord, newScreenCoords, viewMatrix, projMatrix, viewport, worldUp);
+				pickedMovement =  modelSpaceMovement;
+			}
 			g_prevMouseCoords.x = event.motion.x;
 			g_prevMouseCoords.y = event.motion.y;
 		}
@@ -537,15 +584,21 @@ bool handleEvents(void)
 		cameraPosition += cameraSpeed * deltaTime * worldUp;
 	}
 	//*
+	// Update picking data
 	{
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, finalFB.framebufferId);
 		{
 			glReadBuffer(GL_COLOR_ATTACHMENT1);
 
-			uint pixel;
-			glReadPixels(mouseX, windowHeight - mouseY, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &pixel);
+			uint id;
+			glReadPixels(mouseX, windowHeight - mouseY, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &id);
 
-			pickedID = pixel;
+			hoverID = id;
+
+			float depth;
+			glReadPixels(mouseX, windowHeight - mouseY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+
+			hoverDepth = depth;
 		}
 		// Reset stuff
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -576,8 +629,13 @@ void gui()
 	if (ImGui::CollapsingHeader("Mouse Picking", ImGuiTreeNodeFlags_Framed + ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::Checkbox("Draw object ids", &drawIds);
-		ImGui::Text("Mouse position X: %i, Y: %i", mouseX, mouseY);
+		ImGui::Text("Hover position X: %i, Y: %i", mouseX, mouseY);
+		ImGui::Text("Hover id: %i", hoverID);
+		ImGui::Text("Hover depth: %f", hoverDepth);
+		ImGui::Text("Picked position: (%f, %f, %f)", pickedModelCoord.x, pickedModelCoord.y, pickedModelCoord.z);
 		ImGui::Text("Picked id: %i", pickedID);
+		ImGui::Text("Picked depth: %f", pickedDepth);
+		ImGui::Text("Picked movement: (%f, %f, %f)", pickedMovement.x, pickedMovement.y, pickedMovement.z);
 	}
 
 	// Reload shaders
