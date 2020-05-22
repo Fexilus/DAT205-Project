@@ -14,7 +14,8 @@ add_library ( architecture
 
 target_include_directories( architecture
 	PUBLIC
-	${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/external_src/cpp11-range
     PRIVATE
     ${GLM_INCLUDE_DIRS}
     ${GLEW_INCLUDE_DIRS}

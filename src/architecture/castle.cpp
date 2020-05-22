@@ -3,10 +3,14 @@
 #include <vector>
 #include <stdexcept>
 
+#include <range.hpp>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/vector_angle.hpp>
+
+using util::lang::indices;
 
 namespace architecture
 {
@@ -219,42 +223,33 @@ namespace architecture
 		return wallStructure;
 	}
 
-	std::vector<Shape*> makeWalls(glm::vec3 nodes[], size_t numNodes)
+	std::vector<CastlePart*> makeWalls(glm::vec3 nodes[], size_t numNodes)
 	{
-		float wallHeight = 50;
-		float wallDepth = 10;
-		float wallThickness = 3;
-		float towerRadius = 20;
+		//float wallHeight = 50;
+		//float wallDepth = 10;
+		//float wallThickness = 3;
+		//float towerRadius = 20;
 
-		glm::vec3 upDir(0, 1, 0);
+		//glm::vec3 upDir(0, 1, 0);
 
-		std::vector<Shape*> structures;
-		std::vector<Shape*> walls;
+		std::vector<CastlePart*> structures(2 * numNodes - 1);
 
 		// First tower and wall
-		glm::vec3 startConnector[] = { nodes[1] - nodes[0] };
-		float startConnectorWidth[] = { 2 * wallDepth };
-		structures.push_back(makeTower(nodes[0], startConnector, startConnectorWidth, 1));
+		structures[0] = new CastleTower(nodes[0]);
 
-		float wallBuffer = sqrt(towerRadius * towerRadius - wallDepth * wallDepth);
-		structures.push_back(makeWall(nodes[0] + wallBuffer * glm::normalize(nodes[1] - nodes[0]), nodes[1] - wallBuffer * glm::normalize(nodes[1] - nodes[0])));
-
-		for (int i = 1; i < numNodes - 1; ++i)
+		for (int i = 1; i < numNodes; ++i)
 		{
 			// Place a tower
-			glm::vec3 connector[] = { nodes[i + 1] - nodes[i], nodes[i - 1] - nodes[i] };
-			float connectorWidth[] = { 2 * wallDepth, 2 * wallDepth };
-			structures.push_back(makeTower(nodes[i], connector, connectorWidth, 2));
+			structures[i] = new CastleTower(nodes[i]);
 
 			// Place straight wall
-			float wallBuffer = sqrt(towerRadius * towerRadius - wallDepth * wallDepth);
-			structures.push_back(makeWall(nodes[i] + wallBuffer * glm::normalize(nodes[i + 1] - nodes[i]), nodes[i+1] - wallBuffer * glm::normalize(nodes[i + 1] - nodes[i])));
-		}
+			structures[numNodes - 1 + i] = new ConnectingCastleWall((CastleTower*)structures[i-1], (CastleTower*)structures[i]);
 
-		// Last tower
-		glm::vec3 endConnector[] = { nodes[numNodes - 2] - nodes[numNodes - 1] };
-		float endConnectorWidth[] = { 2 * wallDepth };
-		structures.push_back(makeTower(nodes[numNodes - 1], endConnector, endConnectorWidth, 1));
+			CastleTower::Connector backConnector = { (ConnectingCastleWall*)structures[numNodes - 1 + i], (CastleTower*)structures[i] };
+			((CastleTower*)structures[i - 1])->connectors.push_back(backConnector);
+			CastleTower::Connector forwardConnector = { (ConnectingCastleWall*)structures[numNodes - 1 + i], (CastleTower*)structures[i - 1] };
+			((CastleTower*)structures[i])->connectors.push_back(forwardConnector);
+		}
 
 		return(structures);
 	}
@@ -370,5 +365,69 @@ namespace architecture
 			battlement->boundsExpand(baseExpansion);
 			castleBattlement(battlement);
 		}
+	}
+	
+	void CastlePart::render()
+	{
+		shape->render();
+	}
+
+	CastleTower::CastleTower(glm::vec3 origin) :
+		origin(origin)
+	{
+	}
+
+	void CastleTower::init()
+	{
+		if (shape != nullptr) delete shape;
+
+		if (connectors.size() == 0) shape = makeTower(origin);
+		else
+		{
+			std::vector<glm::vec3> connectorDirs(connectors.size());
+			std::vector<float> connectorWidths(connectors.size());
+			for (int i : indices(connectors))
+			{
+				connectorDirs[i] = connectors[i].tower->origin - origin;
+				connectorWidths[i] = connectors[i].wall->width();
+			}
+
+			shape = makeTower(origin, connectorDirs.data(), connectorWidths.data(), connectors.size());
+		}
+
+		shape->init();
+	}
+
+	void CastleTower::move(glm::vec3 movement)
+	{
+		origin += movement;
+		init();
+
+		for (auto& connector : connectors)
+		{
+			connector.wall->init();
+			connector.tower->init();
+		}
+	}
+
+	ConnectingCastleWall::ConnectingCastleWall(CastleTower* node1, CastleTower* node2) :
+		node1(node1),
+		node2(node2)
+	{
+	}
+
+	void ConnectingCastleWall::init()
+	{
+		if (shape != nullptr) delete shape;
+
+		float wallBuffer1 = sqrt(node1->radius() * node1->radius() - width() * width() / 4);
+		float wallBuffer2 = sqrt(node2->radius() * node2->radius() - width() * width() / 4);
+		shape = makeWall(node1->origin + wallBuffer1 * glm::normalize(node2->origin - node1->origin), node2->origin - wallBuffer2 * glm::normalize(node2->origin - node1->origin));
+
+		shape->init();
+	}
+
+	void ConnectingCastleWall::move(glm::vec3 movement)
+	{
 	}
 }

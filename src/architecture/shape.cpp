@@ -14,6 +14,24 @@ namespace architecture
 		bounds[2] = bounds_[2];
 	}
 
+	Shape::~Shape()
+	{
+		for (auto& childVec : children)
+		{
+			for (auto& child : *childVec.second)
+			{
+				delete child;
+			}
+
+			delete childVec.second;
+		}
+
+		if (vao != 0) glDeleteVertexArrays(1, &vao);
+		if (positionBuffer != 0) glDeleteBuffers(1, &positionBuffer);
+		if (normalBuffer != 0) glDeleteBuffers(1, &normalBuffer);
+		if (indexBuffer != 0) glDeleteBuffers(1, &indexBuffer);
+	}
+
 	void Shape::init()
 	{
 		for (auto& childCollection : children)
@@ -26,7 +44,7 @@ namespace architecture
 		if ((children.size() == 0) | (parentChildOp != ParentChildOperator::none))
 		{
 			// Create a handle for the vertex array object
-			glGenVertexArrays(1, &vao);
+			if (vao == 0) glGenVertexArrays(1, &vao);
 			// Set it as current, i.e., related calls will affect this object
 			glBindVertexArray(vao);
 
@@ -229,9 +247,8 @@ namespace architecture
 				indices.push_back(4 + 8 * numCircNodes + glm::ivec3(2, 1, 0));
 			}
 
-			GLuint positionBuffer;
 			// Create a handle for the vertex position buffer
-			glGenBuffers(1, &positionBuffer);
+			if(positionBuffer == 0) glGenBuffers(1, &positionBuffer);
 			// Set the newly created buffer as the current one
 			glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
 			// Send the vetex position data to the current buffer
@@ -240,9 +257,8 @@ namespace architecture
 			// Enable the attribute
 			glEnableVertexAttribArray(0);
 
-			GLuint normalBuffer;
 			// Create a handle for the vertex position buffer
-			glGenBuffers(1, &normalBuffer);
+			if (normalBuffer == 0) glGenBuffers(1, &normalBuffer);
 			// Set the newly created buffer as the current one
 			glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
 			// Send the vetex position data to the current buffer
@@ -251,8 +267,7 @@ namespace architecture
 			// Enable the attribute
 			glEnableVertexAttribArray(1);
 
-			GLuint indexBuffer;
-			glGenBuffers(1, &indexBuffer);
+			if (indexBuffer == 0) glGenBuffers(1, &indexBuffer);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glm::ivec3) * indices.size(), indices.data(), GL_STATIC_DRAW);
 

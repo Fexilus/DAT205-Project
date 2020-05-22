@@ -113,7 +113,7 @@ float ssaoRadius = 3.0f;
 ///////////////////////////////////////////////////////////////////////////////
 // Procedural generation
 ///////////////////////////////////////////////////////////////////////////////
-std::unordered_map<uint, architecture::Shape*> proceduralObjects;
+std::unordered_map<uint, architecture::CastlePart*> proceduralObjects;
 uint proceduralFreeId = 1;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -169,10 +169,10 @@ void generateGeometry()
 	}
 
 	// Tower test
-	proceduralObjects[proceduralFreeId++] = architecture::makeTower(vec3(0,0,50));
+	proceduralObjects[proceduralFreeId++] = new architecture::CastleTower(vec3(0,0,50));
 
 	// Wall test
-	proceduralObjects[proceduralFreeId++] = architecture::makeWall(vec3(0, 0, 90), vec3(80, 0, 100));
+	//proceduralObjects[proceduralFreeId++] = architecture::makeWall(vec3(0, 0, 90), vec3(80, 0, 100));
 
 	// Init geometry
 	for (auto& object : proceduralObjects)
@@ -322,7 +322,7 @@ void drawScene(GLuint currentShaderProgram,
 	{
 		labhelper::setUniformSlow(currentShaderProgram, "objectId", object.first);
 
-		mat4 modelMatrix = object.first == pickedID ? translate(pickedMovement) : mat4(1.0f);
+		mat4 modelMatrix = object.first == pickedID && g_isMouseDraggingLeft ? translate(pickedMovement) : mat4(1.0f);
 		labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
 			projectionMatrix * viewMatrix * modelMatrix);
 		labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix",
@@ -528,9 +528,18 @@ bool handleEvents(void)
 		{
 			g_isMouseDraggingRight = false;
 		}
-		if (!(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT)))
+		if (!(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT)) && g_isMouseDraggingLeft)
 		{
 			g_isMouseDraggingLeft = false;
+
+			auto& pickedObject = proceduralObjects.find(pickedID);
+			if (pickedObject != proceduralObjects.end())
+			{
+				pickedObject->second->move(pickedMovement);
+			}
+
+			// Reset to avoid weird movement previews
+			pickedMovement = vec3(0);
 		}
 		if (!(g_isMouseDraggingRight || g_isMouseDraggingLeft))
 		{
@@ -583,7 +592,17 @@ bool handleEvents(void)
 	{
 		cameraPosition += cameraSpeed * deltaTime * worldUp;
 	}
-	//*
+
+	/*if (state[SDL_SCANCODE_DELETE])
+	{
+		auto& pickedObject = proceduralObjects.find(pickedID);
+		if (pickedObject != proceduralObjects.end())
+		{
+			delete pickedObject->second;
+			proceduralObjects.erase(pickedObject);
+		}
+	}*/
+
 	// Update picking data
 	{
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, finalFB.framebufferId);
@@ -604,7 +623,7 @@ bool handleEvents(void)
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
-	//*/
+
 	return quitEvent;
 }
 

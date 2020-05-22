@@ -47,13 +47,18 @@ namespace architecture
 
 	private:
 		// The vertex array object
-		GLuint vao;
-		// The number of nodes to draw in the
+		GLuint vao = 0;
+		// The number of nodes to draw
 		int numNodes = 0;
+		// Buffer locations
+		GLuint positionBuffer = 0;
+		GLuint normalBuffer = 0;
+		GLuint indexBuffer = 0;
 
 	public:
 
 		Shape(CoordSys coordSys, glm::vec2 bounds[3]);
+		~Shape();
 
 		void init();
 		void render();
