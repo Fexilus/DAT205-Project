@@ -4,6 +4,7 @@
 precision highp float;
 
 uniform uint objectId;
+uniform uint hoverId;
 uniform uint pickedId;
 
 layout(location = 1) out uint fragmentId;
@@ -49,6 +50,11 @@ vec4 id_debug()
 void render_picking()
 {
 	fragmentId = objectId;
+}
+
+bool hovered()
+{
+	return hoverId == objectId;
 }
 
 bool picked()

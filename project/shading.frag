@@ -70,6 +70,7 @@ layout(location = 0) out vec4 fragmentColor;
 ///////////////////////////////////////////////////////////////////////////////
 vec4 id_debug();
 void render_picking();
+bool hovered();
 bool picked();
 
 
@@ -221,7 +222,9 @@ void main()
 	///////////////////////////////////////////////////////////////////////////
 	// Task 1.4 - Make glowy things glow!
 	///////////////////////////////////////////////////////////////////////////
-	vec3 emission_term = material_emission * material_color + int(picked()) * vec3(0.5, 0, 0);
+	vec3 pickingColorRaw = int(hovered()) * vec3(0.5, 0, 0) + int(picked()) * vec3(0.5, 0.5, 0);
+	vec3 pickingColor = length(pickingColorRaw) > 0.01 ? pickingColorRaw : vec3(0);
+	vec3 emission_term = material_emission * material_color + pickingColor;
 
 	vec3 final_color = /*direct_illumination_term +*/ indirect_illumination_term + emission_term;
 
