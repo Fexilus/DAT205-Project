@@ -207,7 +207,7 @@ namespace boolean3d
 					triangulation.insert_constraint(eit->source()->point(), eit->target()->point());
 				}
 
-				//if (triangulation.number_of_faces() > 1)
+				if (triangulation.number_of_faces() > 1)
 				{
 					for (auto& face : triangulation.finite_face_handles())
 					{
@@ -217,9 +217,9 @@ namespace boolean3d
 						mesh.push_back(subCompleteTriangle);
 					}
 				}
-				//else
+				else
 				{
-				//	mesh.push_back(*arrPair.first);
+					mesh.push_back(*arrPair.first);
 				}
 			}
 		}
@@ -227,33 +227,33 @@ namespace boolean3d
 		{
 			if (!arrPair.first->positions.is_degenerate())
 			{
-				Kernel::Point_2 tri1p0 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(0));
-				Kernel::Point_2 tri1p1 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(1));
-				Kernel::Point_2 tri1p2 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(2));
-				Kernel::Segment_2 tri1s1(tri1p0, tri1p1);
-				Kernel::Segment_2 tri1s2(tri1p1, tri1p2);
-				Kernel::Segment_2 tri1s3(tri1p2, tri1p0);
-				CGAL::insert(*arrPair.second, tri1s1);
-				CGAL::insert(*arrPair.second, tri1s2);
-				CGAL::insert(*arrPair.second, tri1s3);
+				Kernel::Point_2 trip0 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(0));
+				Kernel::Point_2 trip1 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(1));
+				Kernel::Point_2 trip2 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(2));
+				Kernel::Segment_2 tris0(trip0, trip1);
+				Kernel::Segment_2 tris1(trip1, trip2);
+				Kernel::Segment_2 tris2(trip2, trip0);
+				CGAL::insert(*arrPair.second, tris0);
+				CGAL::insert(*arrPair.second, tris1);
+				CGAL::insert(*arrPair.second, tris2);
 
-				CDT triangulation1;
+				CDT triangulation;
 				Arrangement_2::Vertex_const_iterator vit;
 				for (vit = arrPair.second->vertices_begin(); vit != arrPair.second->vertices_end(); ++vit)
 				{
-					triangulation1.insert(vit->point());
+					triangulation.insert(vit->point());
 				}
 				Arrangement_2::Edge_const_iterator eit;
 				for (eit = arrPair.second->edges_begin(); eit != arrPair.second->edges_end(); ++eit)
 				{
-					triangulation1.insert_constraint(eit->source()->point(), eit->target()->point());
+					triangulation.insert_constraint(eit->source()->point(), eit->target()->point());
 				}
 
-				if (triangulation1.number_of_faces() > 1)
+				if (triangulation.number_of_faces() > 1)
 				{
-					for (auto& face : triangulation1.finite_face_handles())
+					for (auto& face : triangulation.finite_face_handles())
 					{
-						auto subtriangle2d = triangulation1.triangle(face);
+						auto subtriangle2d = triangulation.triangle(face);
 						Kernel::Triangle_3 subtriangle3d(triangleUnproj(&arrPair.first->positions, &subtriangle2d));
 						CompleteTriangle subCompleteTriangle = { subtriangle3d, arrPair.first->normals };
 						mesh.push_back(subCompleteTriangle);
