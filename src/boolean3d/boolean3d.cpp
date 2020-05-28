@@ -1,6 +1,7 @@
 #include <boolean3d.h>
 
 #include <unordered_map>
+#include <boost/range/join.hpp>
 
 #include <CGAL/Plane_3.h>
 #include <CGAL/Arr_segment_traits_2.h>
@@ -127,8 +128,6 @@ namespace boolean3d
 
 	Mesh intersect(Mesh mesh1, Mesh mesh2)
 	{
-		Mesh mesh;
-
 		std::unordered_map<CompleteTriangle*, Arrangement_2*> arrangements1;
 		std::unordered_map<CompleteTriangle*, Arrangement_2*> arrangements2;
 
@@ -180,22 +179,22 @@ namespace boolean3d
 			}
 		}
 
-		
-		for (auto& arrPair : arrangements1)
+
+		Mesh debugMesh;
+
+		for (auto& arrPair : boost::range::join(arrangements1, arrangements2))
 		{
 			if (!arrPair.first->positions.is_degenerate())
 			{
+				CDT triangulation;
+
 				Kernel::Point_2 trip0 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(0));
 				Kernel::Point_2 trip1 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(1));
 				Kernel::Point_2 trip2 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(2));
-				Kernel::Segment_2 tris0(trip0, trip1);
-				Kernel::Segment_2 tris1(trip1, trip2);
-				Kernel::Segment_2 tris2(trip2, trip0);
-				CGAL::insert(*arrPair.second, tris0);
-				CGAL::insert(*arrPair.second, tris1);
-				CGAL::insert(*arrPair.second, tris2);
+				triangulation.insert(trip0);
+				triangulation.insert(trip1);
+				triangulation.insert(trip2);
 
-				CDT triangulation;
 				Arrangement_2::Vertex_const_iterator vit;
 				for (vit = arrPair.second->vertices_begin(); vit != arrPair.second->vertices_end(); ++vit)
 				{
@@ -214,59 +213,19 @@ namespace boolean3d
 						auto subtriangle2d = triangulation.triangle(face);
 						Kernel::Triangle_3 subtriangle3d(triangleUnproj(&arrPair.first->positions, &subtriangle2d));
 						CompleteTriangle subCompleteTriangle = { subtriangle3d, arrPair.first->normals };
-						mesh.push_back(subCompleteTriangle);
+						debugMesh.push_back(subCompleteTriangle);
 					}
 				}
 				else
 				{
-					mesh.push_back(*arrPair.first);
-				}
-			}
-		}
-		for (auto& arrPair : arrangements2)
-		{
-			if (!arrPair.first->positions.is_degenerate())
-			{
-				Kernel::Point_2 trip0 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(0));
-				Kernel::Point_2 trip1 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(1));
-				Kernel::Point_2 trip2 = pointProj(&arrPair.first->positions, &arrPair.first->positions.vertex(2));
-				Kernel::Segment_2 tris0(trip0, trip1);
-				Kernel::Segment_2 tris1(trip1, trip2);
-				Kernel::Segment_2 tris2(trip2, trip0);
-				CGAL::insert(*arrPair.second, tris0);
-				CGAL::insert(*arrPair.second, tris1);
-				CGAL::insert(*arrPair.second, tris2);
-
-				CDT triangulation;
-				Arrangement_2::Vertex_const_iterator vit;
-				for (vit = arrPair.second->vertices_begin(); vit != arrPair.second->vertices_end(); ++vit)
-				{
-					triangulation.insert(vit->point());
-				}
-				Arrangement_2::Edge_const_iterator eit;
-				for (eit = arrPair.second->edges_begin(); eit != arrPair.second->edges_end(); ++eit)
-				{
-					triangulation.insert_constraint(eit->source()->point(), eit->target()->point());
-				}
-
-				if (triangulation.number_of_faces() > 1)
-				{
-					for (auto& face : triangulation.finite_face_handles())
-					{
-						auto subtriangle2d = triangulation.triangle(face);
-						Kernel::Triangle_3 subtriangle3d(triangleUnproj(&arrPair.first->positions, &subtriangle2d));
-						CompleteTriangle subCompleteTriangle = { subtriangle3d, arrPair.first->normals };
-						mesh.push_back(subCompleteTriangle);
-					}
-				}
-				else
-				{
-					mesh.push_back(*arrPair.first);
+					debugMesh.push_back(*arrPair.first);
 				}
 			}
 		}
 
-		return mesh;
+		Mesh unionMesh1, intersectMesh1, unionMesh2, intersectMesh2;
+
+		return debugMesh;
 	}
 
 	Mesh toMesh(PolygonSoup soup)
