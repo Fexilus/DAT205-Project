@@ -41,210 +41,233 @@ namespace architecture
 				child->init();
 			}
 		}
-		if ((children.size() == 0) | (parentChildOp != ParentChildOperator::none))
+		if ((children.size() == 0) | (parentChildOp != ParentChildOperator::none) | (childChildOp == ChildChildOperator::intersect))
 		{
 			// Create a handle for the vertex array object
 			if (vao == 0) glGenVertexArrays(1, &vao);
 			// Set it as current, i.e., related calls will affect this object
 			glBindVertexArray(vao);
 
-			std::vector<glm::vec3> positions;
-			std::vector<glm::vec3> normals;
-			std::vector<glm::ivec3> indices;
-
-			if (coordSys.type == CoordSysType::cartesian)
+			if (childChildOp == ChildChildOperator::intersect)
 			{
-				glm::mat3 coordMatrix(coordSys.bases[0], coordSys.bases[1], coordSys.bases[2]);
+				bool firstMesh = true;
+				boolean3d::Mesh resultMesh;
 
-				// Define vertices of bounding box
-				positions = {
-					// X		     Y             Z
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
+				for (auto& childCollection : children)
+				{
+					for (Shape* child : *childCollection.second)
+					{
+						if (firstMesh)
+						{
+							resultMesh = boolean3d::toMesh(child->soup);
+							firstMesh = false;
+						}
+						else
+						{
+							boolean3d::Mesh curMesh = boolean3d::toMesh(child->soup);
+							resultMesh = boolean3d::intersect(curMesh, resultMesh);
+						}
+					}
+				}
 
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
-
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
-
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
-
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
-
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
-					coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
-				};
-
-				// Define normals
-				normals = {
-					coordMatrix * glm::vec3(-1,  0,  0),
-					coordMatrix * glm::vec3(-1,  0,  0),
-					coordMatrix * glm::vec3(-1,  0,  0),
-					coordMatrix * glm::vec3(-1,  0,  0),
-
-					coordMatrix * glm::vec3(1,  0,  0),
-					coordMatrix * glm::vec3(1,  0,  0),
-					coordMatrix * glm::vec3(1,  0,  0),
-					coordMatrix * glm::vec3(1,  0,  0),
-
-					coordMatrix * glm::vec3(0, -1,  0),
-					coordMatrix * glm::vec3(0, -1,  0),
-					coordMatrix * glm::vec3(0, -1,  0),
-					coordMatrix * glm::vec3(0, -1,  0),
-
-					coordMatrix * glm::vec3(0,  1,  0),
-					coordMatrix * glm::vec3(0,  1,  0),
-					coordMatrix * glm::vec3(0,  1,  0),
-					coordMatrix * glm::vec3(0,  1,  0),
-
-					coordMatrix * glm::vec3(0,  0, -1),
-					coordMatrix * glm::vec3(0,  0, -1),
-					coordMatrix * glm::vec3(0,  0, -1),
-					coordMatrix * glm::vec3(0,  0, -1),
-
-					coordMatrix * glm::vec3(0,  0,  1),
-					coordMatrix * glm::vec3(0,  0,  1),
-					coordMatrix * glm::vec3(0,  0,  1),
-					coordMatrix * glm::vec3(0,  0,  1),
-				};
-
-				//Define the corresponding indicies
-				indices = {
-					glm::ivec3( 0,  1,  2),
-					glm::ivec3( 3,  2,  1), // Side 1
-					glm::ivec3( 4,  5,  6),
-					glm::ivec3( 7,  6,  5), // Side 2
-					glm::ivec3( 8,  9, 10),
-					glm::ivec3(11, 10,  9), // Side 3
-					glm::ivec3(12, 13, 14),
-					glm::ivec3(15, 14, 13), // Side 4
-					glm::ivec3(16, 17, 18),
-					glm::ivec3(19, 18, 17), // Side 5
-					glm::ivec3(20, 21, 22),
-					glm::ivec3(23, 22, 21)  // Side 6
-				};
+				soup = boolean3d::fromMesh(resultMesh);
 			}
-			else if (coordSys.type == CoordSysType::cylindrical)
+			else
 			{
-				int resolution = 20;
-				
-				adjustPhiBounds();
-				//float circleFrac = (bounds[1][1] - bounds[1][0]) / (2 * glm::pi<float>());
-
-				// TODO: Make complete circle at when end point is almost at begining point
-				int startNode = ceil(bounds[1][0] / (2 * glm::pi<float>()) * resolution);
-				int endNode = floor(bounds[1][1] / (2 * glm::pi<float>()) * resolution);
-				int numCircNodes = endNode - startNode + 3;
-				std::vector<glm::vec3> circNodes(numCircNodes);
-
-				float phiStep = 2 * glm::pi<float>() / resolution;
-
-				for (size_t i = 0; i < numCircNodes - 2; ++i)
+				if (coordSys.type == CoordSysType::cartesian)
 				{
-					circNodes[i+1] = cosf((startNode + i) * phiStep) * coordSys.bases[0] + sinf((startNode + i) * phiStep) * coordSys.bases[1];
+					glm::mat3 coordMatrix(coordSys.bases[0], coordSys.bases[1], coordSys.bases[2]);
+
+					// Define vertices of bounding box
+					soup.positions = {
+						// X		     Y             Z
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
+
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
+
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
+
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
+
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][0]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][0]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][0]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][0]),
+
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][0], bounds[2][1]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][0], bounds[2][1]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][0], bounds[1][1], bounds[2][1]),
+						coordSys.origin + coordMatrix * glm::vec3(bounds[0][1], bounds[1][1], bounds[2][1]),
+					};
+
+					// Define mesh.normals
+					soup.normals = {
+						coordMatrix * glm::vec3(-1,  0,  0),
+						coordMatrix * glm::vec3(-1,  0,  0),
+						coordMatrix * glm::vec3(-1,  0,  0),
+						coordMatrix * glm::vec3(-1,  0,  0),
+
+						coordMatrix * glm::vec3(1,  0,  0),
+						coordMatrix * glm::vec3(1,  0,  0),
+						coordMatrix * glm::vec3(1,  0,  0),
+						coordMatrix * glm::vec3(1,  0,  0),
+
+						coordMatrix * glm::vec3(0, -1,  0),
+						coordMatrix * glm::vec3(0, -1,  0),
+						coordMatrix * glm::vec3(0, -1,  0),
+						coordMatrix * glm::vec3(0, -1,  0),
+
+						coordMatrix * glm::vec3(0,  1,  0),
+						coordMatrix * glm::vec3(0,  1,  0),
+						coordMatrix * glm::vec3(0,  1,  0),
+						coordMatrix * glm::vec3(0,  1,  0),
+
+						coordMatrix * glm::vec3(0,  0, -1),
+						coordMatrix * glm::vec3(0,  0, -1),
+						coordMatrix * glm::vec3(0,  0, -1),
+						coordMatrix * glm::vec3(0,  0, -1),
+
+						coordMatrix * glm::vec3(0,  0,  1),
+						coordMatrix * glm::vec3(0,  0,  1),
+						coordMatrix * glm::vec3(0,  0,  1),
+						coordMatrix * glm::vec3(0,  0,  1),
+					};
+
+					//Define the corresponding indicies
+					soup.indices = {
+						glm::ivec3(0,  1,  2),
+						glm::ivec3(3,  2,  1), // Side 1
+						glm::ivec3(4,  5,  6),
+						glm::ivec3(7,  6,  5), // Side 2
+						glm::ivec3(8,  9, 10),
+						glm::ivec3(11, 10,  9), // Side 3
+						glm::ivec3(12, 13, 14),
+						glm::ivec3(15, 14, 13), // Side 4
+						glm::ivec3(16, 17, 18),
+						glm::ivec3(19, 18, 17), // Side 5
+						glm::ivec3(20, 21, 22),
+						glm::ivec3(23, 22, 21)  // Side 6
+					};
 				}
-
-				circNodes[0] = cosf(bounds[1][0]) * coordSys.bases[0] + sinf(bounds[1][0]) * coordSys.bases[1];
-				circNodes[numCircNodes - 1] = cosf(bounds[1][1]) * coordSys.bases[0] + sinf(bounds[1][1]) * coordSys.bases[1];
-
-				// Nodes for wedge opening side
-				positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
-
-				normals.push_back(-glm::cross(coordSys.bases[2], circNodes[0]));
-				normals.push_back(-glm::cross(coordSys.bases[2], circNodes[0]));
-				normals.push_back(-glm::cross(coordSys.bases[2], circNodes[0]));
-				normals.push_back(-glm::cross(coordSys.bases[2], circNodes[0]));
-
-				indices.push_back(glm::ivec3(0, 1, 2));
-				indices.push_back(glm::ivec3(2, 3, 0));
-
-				// Initial circular nodes
-				positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
-
-				normals.push_back(circNodes[0]);
-				normals.push_back(circNodes[0]);
-				normals.push_back(-circNodes[0]);
-				normals.push_back(-circNodes[0]);
-
-				positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
-
-				normals.push_back(-coordSys.bases[2]);
-				normals.push_back(coordSys.bases[2]);
-				normals.push_back(coordSys.bases[2]);
-				normals.push_back(-coordSys.bases[2]);
-
-				for (int i = 1; i < numCircNodes; ++i)
+				else if (coordSys.type == CoordSysType::cylindrical)
 				{
-					// The outer and inner part of the cylinder
-					positions.push_back(coordSys.origin + bounds[0][1] * circNodes[i] + bounds[2][0] * coordSys.bases[2]);
-					positions.push_back(coordSys.origin + bounds[0][1] * circNodes[i] + bounds[2][1] * coordSys.bases[2]);
-					positions.push_back(coordSys.origin + bounds[0][0] * circNodes[i] + bounds[2][1] * coordSys.bases[2]);
-					positions.push_back(coordSys.origin + bounds[0][0] * circNodes[i] + bounds[2][0] * coordSys.bases[2]);
+					int resolution = 20;
 
-					normals.push_back(circNodes[i]);
-					normals.push_back(circNodes[i]);
-					normals.push_back(-circNodes[i]);
-					normals.push_back(-circNodes[i]);
+					adjustPhiBounds();
+					//float circleFrac = (bounds[1][1] - bounds[1][0]) / (2 * glm::pi<float>());
 
-					indices.push_back(4 + glm::ivec3(8*(i-1)  , 8* i     , 8* i   +1));
-					indices.push_back(4 + glm::ivec3(8* i   +1, 8*(i-1)+1, 8*(i-1)  ));
-					indices.push_back(4 + glm::ivec3(8*(i-1)+3, 8*(i-1)+2, 8* i   +2));
-					indices.push_back(4 + glm::ivec3(8* i   +2, 8* i   +3, 8*(i-1)+3));
+					// TODO: Make complete circle at when end point is almost at begining point
+					int startNode = ceil(bounds[1][0] / (2 * glm::pi<float>()) * resolution);
+					int endNode = floor(bounds[1][1] / (2 * glm::pi<float>()) * resolution);
+					int numCircNodes = endNode - startNode + 3;
+					std::vector<glm::vec3> circNodes(numCircNodes);
 
-					// The top and bottom part of the cylinder
-					positions.push_back(coordSys.origin + bounds[0][1] * circNodes[i] + bounds[2][0] * coordSys.bases[2]);
-					positions.push_back(coordSys.origin + bounds[0][1] * circNodes[i] + bounds[2][1] * coordSys.bases[2]);
-					positions.push_back(coordSys.origin + bounds[0][0] * circNodes[i] + bounds[2][1] * coordSys.bases[2]);
-					positions.push_back(coordSys.origin + bounds[0][0] * circNodes[i] + bounds[2][0] * coordSys.bases[2]);
+					float phiStep = 2 * glm::pi<float>() / resolution;
 
-					normals.push_back(-coordSys.bases[2]);
-					normals.push_back(coordSys.bases[2]);
-					normals.push_back(coordSys.bases[2]);
-					normals.push_back(-coordSys.bases[2]);
+					for (size_t i = 0; i < numCircNodes - 2; ++i)
+					{
+						circNodes[i + 1] = cosf((startNode + i) * phiStep) * coordSys.bases[0] + sinf((startNode + i) * phiStep) * coordSys.bases[1];
+					}
 
-					indices.push_back(8 + glm::ivec3(8*(i-1)  , 8*(i-1)+3, 8* i   +3));
-					indices.push_back(8 + glm::ivec3(8* i   +3, 8* i     , 8*(i-1)  ));
-					indices.push_back(8 + glm::ivec3(8*(i-1)+1, 8* i   +1, 8* i   +2));
-					indices.push_back(8 + glm::ivec3(8* i   +2, 8*(i-1)+2, 8*(i-1)+1));
+					circNodes[0] = cosf(bounds[1][0]) * coordSys.bases[0] + sinf(bounds[1][0]) * coordSys.bases[1];
+					circNodes[numCircNodes - 1] = cosf(bounds[1][1]) * coordSys.bases[0] + sinf(bounds[1][1]) * coordSys.bases[1];
+
+					// Nodes for wedge opening side
+					soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
+
+					soup.normals.push_back(-glm::cross(coordSys.bases[2], circNodes[0]));
+					soup.normals.push_back(-glm::cross(coordSys.bases[2], circNodes[0]));
+					soup.normals.push_back(-glm::cross(coordSys.bases[2], circNodes[0]));
+					soup.normals.push_back(-glm::cross(coordSys.bases[2], circNodes[0]));
+
+					soup.indices.push_back(glm::ivec3(0, 1, 2));
+					soup.indices.push_back(glm::ivec3(2, 3, 0));
+
+					// Initial circular nodes
+					soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
+
+					soup.normals.push_back(circNodes[0]);
+					soup.normals.push_back(circNodes[0]);
+					soup.normals.push_back(-circNodes[0]);
+					soup.normals.push_back(-circNodes[0]);
+
+					soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][1] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[0] + bounds[2][0] * coordSys.bases[2]);
+
+					soup.normals.push_back(-coordSys.bases[2]);
+					soup.normals.push_back(coordSys.bases[2]);
+					soup.normals.push_back(coordSys.bases[2]);
+					soup.normals.push_back(-coordSys.bases[2]);
+
+					for (int i = 1; i < numCircNodes; ++i)
+					{
+						// The outer and inner part of the cylinder
+						soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[i] + bounds[2][0] * coordSys.bases[2]);
+						soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[i] + bounds[2][1] * coordSys.bases[2]);
+						soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[i] + bounds[2][1] * coordSys.bases[2]);
+						soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[i] + bounds[2][0] * coordSys.bases[2]);
+
+						soup.normals.push_back(circNodes[i]);
+						soup.normals.push_back(circNodes[i]);
+						soup.normals.push_back(-circNodes[i]);
+						soup.normals.push_back(-circNodes[i]);
+
+						soup.indices.push_back(4 + glm::ivec3(8 * (i - 1), 8 * i, 8 * i + 1));
+						soup.indices.push_back(4 + glm::ivec3(8 * i + 1, 8 * (i - 1) + 1, 8 * (i - 1)));
+						soup.indices.push_back(4 + glm::ivec3(8 * (i - 1) + 3, 8 * (i - 1) + 2, 8 * i + 2));
+						soup.indices.push_back(4 + glm::ivec3(8 * i + 2, 8 * i + 3, 8 * (i - 1) + 3));
+
+						// The top and bottom part of the cylinder
+						soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[i] + bounds[2][0] * coordSys.bases[2]);
+						soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[i] + bounds[2][1] * coordSys.bases[2]);
+						soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[i] + bounds[2][1] * coordSys.bases[2]);
+						soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[i] + bounds[2][0] * coordSys.bases[2]);
+
+						soup.normals.push_back(-coordSys.bases[2]);
+						soup.normals.push_back(coordSys.bases[2]);
+						soup.normals.push_back(coordSys.bases[2]);
+						soup.normals.push_back(-coordSys.bases[2]);
+
+						soup.indices.push_back(8 + glm::ivec3(8 * (i - 1), 8 * (i - 1) + 3, 8 * i + 3));
+						soup.indices.push_back(8 + glm::ivec3(8 * i + 3, 8 * i, 8 * (i - 1)));
+						soup.indices.push_back(8 + glm::ivec3(8 * (i - 1) + 1, 8 * i + 1, 8 * i + 2));
+						soup.indices.push_back(8 + glm::ivec3(8 * i + 2, 8 * (i - 1) + 2, 8 * (i - 1) + 1));
+					}
+
+					// Nodes for wedge closing side
+					soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[numCircNodes - 1] + bounds[2][0] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][1] * circNodes[numCircNodes - 1] + bounds[2][1] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[numCircNodes - 1] + bounds[2][1] * coordSys.bases[2]);
+					soup.positions.push_back(coordSys.origin + bounds[0][0] * circNodes[numCircNodes - 1] + bounds[2][0] * coordSys.bases[2]);
+
+					soup.normals.push_back(glm::cross(coordSys.bases[2], circNodes[numCircNodes - 1]));
+					soup.normals.push_back(glm::cross(coordSys.bases[2], circNodes[numCircNodes - 1]));
+					soup.normals.push_back(glm::cross(coordSys.bases[2], circNodes[numCircNodes - 1]));
+					soup.normals.push_back(glm::cross(coordSys.bases[2], circNodes[numCircNodes - 1]));
+
+					soup.indices.push_back(4 + 8 * numCircNodes + glm::ivec3(0, 3, 2));
+					soup.indices.push_back(4 + 8 * numCircNodes + glm::ivec3(2, 1, 0));
 				}
-
-				// Nodes for wedge closing side
-				positions.push_back(coordSys.origin + bounds[0][1] * circNodes[numCircNodes-1] + bounds[2][0] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][1] * circNodes[numCircNodes-1] + bounds[2][1] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][0] * circNodes[numCircNodes-1] + bounds[2][1] * coordSys.bases[2]);
-				positions.push_back(coordSys.origin + bounds[0][0] * circNodes[numCircNodes-1] + bounds[2][0] * coordSys.bases[2]);
-
-				normals.push_back(glm::cross(coordSys.bases[2], circNodes[numCircNodes - 1]));
-				normals.push_back(glm::cross(coordSys.bases[2], circNodes[numCircNodes - 1]));
-				normals.push_back(glm::cross(coordSys.bases[2], circNodes[numCircNodes - 1]));
-				normals.push_back(glm::cross(coordSys.bases[2], circNodes[numCircNodes - 1]));
-
-				indices.push_back(4 + 8 * numCircNodes + glm::ivec3(0, 3, 2));
-				indices.push_back(4 + 8 * numCircNodes + glm::ivec3(2, 1, 0));
 			}
 
 			// Create a handle for the vertex position buffer
@@ -252,7 +275,7 @@ namespace architecture
 			// Set the newly created buffer as the current one
 			glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
 			// Send the vetex position data to the current buffer
-			glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * positions.size(), positions.data(), GL_STATIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * soup.positions.size(), soup.positions.data(), GL_STATIC_DRAW);
 			glVertexAttribPointer(0, 3, GL_FLOAT, false /*normalized*/, 0 /*stride*/, 0 /*offset*/);
 			// Enable the attribute
 			glEnableVertexAttribArray(0);
@@ -262,30 +285,37 @@ namespace architecture
 			// Set the newly created buffer as the current one
 			glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
 			// Send the vetex position data to the current buffer
-			glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * normals.size(), normals.data(), GL_STATIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * soup.normals.size(), soup.normals.data(), GL_STATIC_DRAW);
 			glVertexAttribPointer(1, 3, GL_FLOAT, false /*normalized*/, 0 /*stride*/, 0 /*offset*/);
 			// Enable the attribute
 			glEnableVertexAttribArray(1);
 
 			if (indexBuffer == 0) glGenBuffers(1, &indexBuffer);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glm::ivec3) * indices.size(), indices.data(), GL_STATIC_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glm::ivec3) * soup.indices.size(), soup.indices.data(), GL_STATIC_DRAW);
 
-			numNodes = indices.size() * 3;
+			numNodes = soup.indices.size() * 3;
 		}
 	}
 
 	void Shape::render()
 	{
-		for (auto& childCollection : children)
+		if (childChildOp != ChildChildOperator::intersect)
 		{
-			for (Shape* child : *childCollection.second)
+			for (auto& childCollection : children)
 			{
-				child->render();
+				for (Shape* child : *childCollection.second)
+				{
+					child->render();
+				}
 			}
 		}
-		if ((children.size() == 0) | (parentChildOp != ParentChildOperator::none))
+		if ((children.size() == 0) | (parentChildOp != ParentChildOperator::none) | (childChildOp == ChildChildOperator::intersect))
 		{
+			if (childChildOp == ChildChildOperator::intersect)
+			{
+				GLint current_program = 1;
+			}
 			glBindVertexArray(vao);
 			GLint current_program = 0;
 
@@ -468,7 +498,7 @@ namespace architecture
 		float halfwayAngle = (bounds[1][1] + bounds[1][0]) / 2;
 		glm::vec3 halfwayAngleDir = cosf(halfwayAngle) * coordSys.bases[0] + sinf(halfwayAngle) * coordSys.bases[1];
 
-		CoordSys wrapSys = { CoordSysType::cartesian, coordSys.origin, { halfwayAngleDir, glm::cross(coordSys.bases[2], halfwayAngleDir), coordSys.bases[2] } };
+		CoordSys wrapSys = { CoordSysType::cartesian, coordSys.origin, { halfwayAngleDir, glm::normalize(glm::cross(coordSys.bases[2], halfwayAngleDir)), coordSys.bases[2] } };
 
 		float oneSideYBounds = sinf(halfwayAngle - bounds[1][0]) * bounds[0][1];
 

@@ -6,6 +6,8 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 
+#include <boolean3d.h>
+
 namespace architecture
 {
 	enum class CoordSysType 
@@ -44,6 +46,8 @@ namespace architecture
 		enum class ChildChildOperator { unite, intersect } childChildOp;
 		// Then this operation is done with the resulting geometry and the owner. None ignore owner geometry)
 		enum class ParentChildOperator { none, unite, intersect, subtract } parentChildOp;
+
+		boolean3d::PolygonSoup soup;
 
 	private:
 		// The vertex array object

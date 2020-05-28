@@ -130,6 +130,15 @@ FboInfo finalFB;
 
 vec3 pickedMovement(0);
 
+///////////////////////////////////////////////////////////////////////////////
+// Boolean operations
+///////////////////////////////////////////////////////////////////////////////
+bool drawWireframe = false;
+architecture::Shape* intersectShape;
+architecture::Shape* isectRect1;
+architecture::Shape* isectRect2;
+architecture::Shape* isectRects;
+
 void loadShaders(bool is_reload)
 {
 	GLuint shader = labhelper::loadShaderProgram("../project/simple.vert", "../project/simple.frag", is_reload);
@@ -179,6 +188,37 @@ void generateGeometry()
 	{
 		object.second->init();
 	}
+
+	// Generate test objects
+	/*
+	architecture::CoordSys isectCoordSys = { architecture::CoordSysType::cylindrical, vec3(-60,0,50), { glm::vec3(0,1,0), glm::vec3(0,0,1), glm::vec3(1,0,0) } };
+
+	glm::vec2 isectBounds[3] = { glm::vec2(0, 10),
+								 glm::vec2(0, 2 * glm::pi<float>() - 0.0001),
+								 glm::vec2(0, 15) };
+
+	intersectShape = new architecture::Shape(isectCoordSys, isectBounds);
+	intersectShape->repeat(0, "Intersect", architecture::SizePolicy::relative, 0.5);
+	intersectShape->children.at("Intersect")->at(0)->coordSys.origin += vec3(1, 3, 0);
+	intersectShape->childChildOp = architecture::Shape::ChildChildOperator::intersect;
+	intersectShape->init();
+	*/
+	architecture::CoordSys isectRect1CoordSys = { architecture::CoordSysType::cartesian, vec3(-60,0,50), { glm::vec3(0,0,1), glm::vec3(1,0,0), glm::vec3(0,1,0) } };
+	architecture::CoordSys isectRect2CoordSys = { architecture::CoordSysType::cartesian, vec3(-73,-5,55), { normalize(glm::vec3(1,0,1)), cross(glm::vec3(0,1,0), normalize(glm::vec3(1,0,1))), glm::vec3(0,1,0) } };
+
+	glm::vec2 isectRectBounds[3] = { glm::vec2(0, 10),
+									 glm::vec2(0, 10),
+									 glm::vec2(0, 15) };
+	isectRect1 = new architecture::Shape(isectRect1CoordSys, isectRectBounds);
+	isectRect2 = new architecture::Shape(isectRect2CoordSys, isectRectBounds);
+	//isectRect1->init();
+	//isectRect2->init();
+	isectRects = new architecture::Shape(isectRect1CoordSys, isectRectBounds);
+	isectRects->children["Isects"] = new std::vector<architecture::Shape*>();
+	isectRects->children["Isects"]->push_back(isectRect1);
+	isectRects->children["Isects"]->push_back(isectRect2);
+	isectRects->childChildOp = architecture::Shape::ChildChildOperator::intersect;
+	isectRects->init();
 }
 
 void initGL()
@@ -332,6 +372,12 @@ void drawScene(GLuint currentShaderProgram,
 
 		object.second->render();
 	}
+
+	// Booleantest
+	//intersectShape->render();
+	//isectRect1->render();
+	//isectRect2->render();
+	isectRects->render();
 }
 
 
@@ -633,7 +679,7 @@ void gui()
 	ImGui_ImplSdlGL3_NewFrame(g_window);
 
 	// SSAO options
-	if (ImGui::CollapsingHeader("SSAO", ImGuiTreeNodeFlags_Framed + ImGuiTreeNodeFlags_DefaultOpen))
+	if (ImGui::CollapsingHeader("SSAO", ImGuiTreeNodeFlags_Framed))
 	{
 		ImGui::Checkbox("Use SSAO", &useSsao);
 		ImGui::Checkbox("Draw SSAO", &drawSsao);
@@ -645,7 +691,7 @@ void gui()
 	}
 
 	// Picking options
-	if (ImGui::CollapsingHeader("Mouse Picking", ImGuiTreeNodeFlags_Framed + ImGuiTreeNodeFlags_DefaultOpen))
+	if (ImGui::CollapsingHeader("Mouse Picking", ImGuiTreeNodeFlags_Framed))
 	{
 		ImGui::Checkbox("Draw object ids", &drawIds);
 		ImGui::Text("Hover position X: %i, Y: %i", mouseX, mouseY);
@@ -655,6 +701,16 @@ void gui()
 		ImGui::Text("Picked id: %i", pickedID);
 		ImGui::Text("Picked depth: %f", pickedDepth);
 		ImGui::Text("Picked movement: (%f, %f, %f)", pickedMovement.x, pickedMovement.y, pickedMovement.z);
+	}
+
+	if (ImGui::CollapsingHeader("Boolean operations", ImGuiTreeNodeFlags_Framed + ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		if (ImGui::Checkbox("Draw wireframe", &drawWireframe))
+		{
+			if (drawWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+		
 	}
 
 	// Reload shaders
