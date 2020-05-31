@@ -138,6 +138,8 @@ architecture::Shape* intersectShape;
 architecture::Shape* isectRect1;
 architecture::Shape* isectRect2;
 architecture::Shape* isectRects;
+uint booleanTestId;
+mat4 booleanTestModelMatrix(1);
 
 void loadShaders(bool is_reload)
 {
@@ -219,6 +221,7 @@ void generateGeometry()
 	isectRects->children["Isects"]->push_back(isectRect2);
 	isectRects->childChildOp = architecture::Shape::ChildChildOperator::intersect;
 	isectRects->init();
+	booleanTestId = proceduralFreeId++;
 }
 
 void initGL()
@@ -377,6 +380,14 @@ void drawScene(GLuint currentShaderProgram,
 	//intersectShape->render();
 	//isectRect1->render();
 	//isectRect2->render();
+	labhelper::setUniformSlow(currentShaderProgram, "objectId", booleanTestId);
+	mat4 tempModelMatrix = booleanTestId == pickedID && g_isMouseDraggingLeft ? translate(pickedMovement) : mat4(1.0f);
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
+		projectionMatrix * viewMatrix * booleanTestModelMatrix * tempModelMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix",
+		viewMatrix * booleanTestModelMatrix * tempModelMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
+		inverse(transpose(viewMatrix * booleanTestModelMatrix * tempModelMatrix)));
 	isectRects->render();
 }
 
@@ -582,6 +593,10 @@ bool handleEvents(void)
 			if (pickedObject != proceduralObjects.end())
 			{
 				pickedObject->second->move(pickedMovement);
+			}
+			else if (pickedID == booleanTestId)
+			{
+				booleanTestModelMatrix *= translate(pickedMovement);
 			}
 
 			// Reset to avoid weird movement previews
