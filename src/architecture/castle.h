@@ -16,19 +16,38 @@ namespace architecture
 		void render();
 	};
 
+	class CastleHeightMixin
+	{
+	public:
+		virtual ~CastleHeightMixin() {}
+		virtual float height() const = 0;
+		virtual void set_height(float newHeight) = 0;
+	};
+
+	class CastleRadiusMixin
+	{
+	public:
+		virtual ~CastleRadiusMixin() {}
+		virtual float radius() const = 0;
+		virtual void set_radius(float newHeight) = 0;
+	};
+
 	class CastleTower;
 	class ConnectingCastleWall;
 
-	class CastleTower : public CastlePart
+	class CastleTower : public CastlePart, public CastleHeightMixin, public CastleRadiusMixin
 	{
 	private:
-		float height = 40;
+		float height_ = 40;
 		float radius_ = 20;
 		float wallThickness = 3;
 		float baseHeight = 5;
 		float ceilingThickness = 3;
 	public:
+		float height() const { return height_; }
+		void set_height(float newHeight);
 		float radius() const { return radius_; }
+		void set_radius(float newRadius);
 
 		glm::vec3 origin;
 
@@ -46,12 +65,14 @@ namespace architecture
 		void move(glm::vec3 movement);
 	};
 
-	class ConnectingCastleWall : public CastlePart
+	class ConnectingCastleWall : public CastlePart, public CastleHeightMixin
 	{
 	private:
-		float height = 40;
+		float height_ = 40;
 		float width_ = 20;
 	public:
+		float height() const { return height_; }
+		void set_height(float newHeight);
 		float width() const { return width_; }
 
 		CastleTower* node1;
@@ -65,9 +86,9 @@ namespace architecture
 	};
 
 	// Rules on allignment elements
-	Shape* makeTower(glm::vec3 origin);
-	Shape* makeTower(glm::vec3 origin, glm::vec3 connectorDirs[], float connectorWidths[], size_t numConnectors);
-	Shape* makeWall(glm::vec3 start, glm::vec3 end);
+	Shape* makeTower(glm::vec3 origin, float height = 40, float radius = 20);
+	Shape* makeTower(glm::vec3 origin, glm::vec3 connectorDirs[], float connectorWidths[], size_t numConnectors, float height = 40, float radius = 20);
+	Shape* makeWall(glm::vec3 start, glm::vec3 end, float height = 40);
 	std::vector<CastlePart*> makeWalls(glm::vec3 nodes[], size_t numNodes);
 
 	// Rules on shapes

@@ -31,6 +31,12 @@ namespace architecture
 		absoluteOuter  // Size with the cartesian unit, measured on the longest part of the geometry
 	};
 
+	enum class PaddingType {
+		low,
+		high,
+		balance
+	};
+
 	// Main shape definition
 	class Shape
 	{
@@ -70,7 +76,7 @@ namespace architecture
 		// Operators
 		void subdivide(int axis, std::string names[], SizePolicy policies[], float sizeVals[], size_t numSubEl);
 		void subdivide(int axis, std::string names[], SizePolicy policies[], float sizeVals[], size_t numSubEl, int mask[]);
-		void repeat(int axis, std::string name, SizePolicy policy, float sizeVal, int paddingMask = true);
+		void repeat(int axis, std::string name, SizePolicy policy, float sizeVal, int paddingMask = true, PaddingType paddingType = PaddingType::balance);
 		void boundsExpand(glm::vec2 boundExpansions[3]);
 		void wrapCartesianOverCylindrical(std::string name);
 

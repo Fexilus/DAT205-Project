@@ -387,7 +387,7 @@ namespace architecture
 		}
 	}
 
-	void Shape::repeat(int axis, std::string name, SizePolicy policy, float sizeVal, int paddingMask /*= 1*/)
+	void Shape::repeat(int axis, std::string name, SizePolicy policy, float sizeVal, int paddingMask /*= 1*/, PaddingType paddingType /*= PaddingType::balance*/)
 	{
 		glm::vec2 newBounds[3];
 		newBounds[0] = bounds[0];
@@ -414,7 +414,20 @@ namespace architecture
 
 			numSubEl = (int)floor(parentSize / (scale * sizeVal));
 
-			newBounds[axis][1] = newBounds[axis][0] + nativePaddingVal;
+			switch (paddingType)
+			{
+				case (PaddingType::low):
+					newBounds[axis][1] = newBounds[axis][0] + 2 * nativePaddingVal;
+					break;
+				case (PaddingType::high):
+					newBounds[axis][1] = newBounds[axis][0];
+					break;
+				case (PaddingType::balance):
+					newBounds[axis][1] = newBounds[axis][0] + nativePaddingVal;
+					break;
+				default:
+					newBounds[axis][1] = newBounds[axis][0] + nativePaddingVal;
+			}
 			for (int i = 0; i < numSubEl; i++)
 			{
 				newBounds[axis] = glm::vec2(newBounds[axis][1], newBounds[axis][1] + (scale * sizeVal));
@@ -424,23 +437,45 @@ namespace architecture
 
 			if (scale * nativePaddingVal > 0.0001 && paddingMask)
 			{
-				glm::vec2 lowerPaddingBounds[3];
-				lowerPaddingBounds[0] = bounds[0];
-				lowerPaddingBounds[1] = bounds[1];
-				lowerPaddingBounds[2] = bounds[2];
+				if (paddingType == PaddingType::low || paddingType == PaddingType::balance)
+				{
+					glm::vec2 lowerPaddingBounds[3];
+					lowerPaddingBounds[0] = bounds[0];
+					lowerPaddingBounds[1] = bounds[1];
+					lowerPaddingBounds[2] = bounds[2];
 
-				lowerPaddingBounds[axis][1] = lowerPaddingBounds[axis][0] + nativePaddingVal;
+					switch (paddingType)
+					{
+						case (PaddingType::low):
+							lowerPaddingBounds[axis][1] = lowerPaddingBounds[axis][0] + 2 * nativePaddingVal;
+							break;
+						case (PaddingType::balance):
+							lowerPaddingBounds[axis][1] = lowerPaddingBounds[axis][0] + nativePaddingVal;
+							break;
+					}
 
-				children["Padding"]->push_back(new Shape(coordSys, lowerPaddingBounds));
+					children["Padding"]->push_back(new Shape(coordSys, lowerPaddingBounds));
+				}
 
-				glm::vec2 upperPaddingBounds[3];
-				upperPaddingBounds[0] = bounds[0];
-				upperPaddingBounds[1] = bounds[1];
-				upperPaddingBounds[2] = bounds[2];
+				if (paddingType == PaddingType::high || paddingType == PaddingType::balance)
+				{
+					glm::vec2 upperPaddingBounds[3];
+					upperPaddingBounds[0] = bounds[0];
+					upperPaddingBounds[1] = bounds[1];
+					upperPaddingBounds[2] = bounds[2];
 
-				upperPaddingBounds[axis][0] = upperPaddingBounds[axis][1] - nativePaddingVal;
+					switch (paddingType)
+					{
+						case (PaddingType::high):
+							upperPaddingBounds[axis][0] = upperPaddingBounds[axis][1] - 2 * nativePaddingVal;
+							break;
+						case (PaddingType::balance):
+							upperPaddingBounds[axis][0] = upperPaddingBounds[axis][1] - nativePaddingVal;
+							break;
+					}
 
-				children["Padding"]->push_back(new Shape(coordSys, upperPaddingBounds));
+					children["Padding"]->push_back(new Shape(coordSys, upperPaddingBounds));
+				}
 			}
 		}
 		else if (policy == SizePolicy::relative)

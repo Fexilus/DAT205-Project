@@ -14,10 +14,8 @@ using util::lang::indices;
 
 namespace architecture
 {
-	Shape* makeTower(glm::vec3 origin)
+	Shape* makeTower(glm::vec3 origin, float height /*= 40*/, float radius /*= 20*/)
 	{
-		float height = 40;
-		float radius = 20;
 		float wallThickness = 3;
 		float baseHeight = 5;
 		float ceilingThickness = 3;
@@ -58,10 +56,8 @@ namespace architecture
 		return towerStructure;
 	}
 
-	Shape* makeTower(glm::vec3 origin, glm::vec3 connectorDirs[], float connectorWidths[], size_t numConnectors)
+	Shape* makeTower(glm::vec3 origin, glm::vec3 connectorDirs[], float connectorWidths[], size_t numConnectors, float height /*= 40*/, float radius /*= 20*/)
 	{
-		float height = 40;
-		float radius = 20;
 		float wallThickness = 3;
 		float baseHeight = 5;
 		float ceilingThickness = 3;
@@ -172,9 +168,8 @@ namespace architecture
 		return towerStructure;
 	}
 
-	Shape* makeWall(glm::vec3 start, glm::vec3 end)
+	Shape* makeWall(glm::vec3 start, glm::vec3 end, float wallHeight /*= 40*/)
 	{
-		float wallHeight = 40;
 		float wallDepth = 10;
 		float wallThickness = 3;
 		float baseHeight = 5;
@@ -275,59 +270,63 @@ namespace architecture
 
 	void castleWindows(Shape* wall)
 	{
-		std::vector<Shape*> segments;
-
-		wall->repeat(1, "Native Segment", SizePolicy::absoluteOuter, 18, false);
-
-		if (wall->coordSys.type == CoordSysType::cartesian)
+		wall->repeat(2, "Level", SizePolicy::absoluteOuter, 28, 1, PaddingType::high);
+		for (auto& level : *wall->children["Level"])
 		{
-			segments = *wall->children["Native Segment"];
-		}
-		else if (wall->coordSys.type == CoordSysType::cylindrical)
-		{
-			for (architecture::Shape* cylinderSegment : *wall->children["Native Segment"])
+			std::vector<Shape*> segments;
+
+			level->repeat(1, "Native Segment", SizePolicy::absoluteOuter, 18, false);
+
+			if (level->coordSys.type == CoordSysType::cartesian)
 			{
-				cylinderSegment->wrapCartesianOverCylindrical("Cartesian Segment");
-				for (auto& segment : *cylinderSegment->children["Cartesian Segment"]) segments.push_back(segment);
+				segments = *level->children["Native Segment"];
 			}
-		}
-		else
-		{
-			throw std::invalid_argument("Invalid coordinate system type");
-		}
-
-		SizePolicy splitPolicies[] = { SizePolicy::relative,
-									   SizePolicy::absoluteTrue,
-									   SizePolicy::relative };
-
-		std::string splitOuterNames[] = { "EMPTY", "Window", "EMPTY" };
-		float splitSizesOuterWidth[] = { 1, 4, 1 };
-		float splitSizesOuterHeight[] = { 1.5, 10, 1 };
-		glm::vec2 frameExpansion[3] = { glm::vec2(1), glm::vec2(0), glm::vec2(0) };
-		std::string splitInnerNames[] = { "Frame", "Space", "Frame" };
-		float splitSizesInnerWidth[] = { 1, 2, 1 };
-		float splitSizesInnerHeight[] = { 1.5, 8, 1 };
-		int windowOuterMask[] = { 0, 1, 0 };
-		int windowInnerMask[] = { 1, 0, 1 };
-		for (architecture::Shape* segment : segments)
-		{
-			segment->subdivide(1, splitOuterNames, splitPolicies, splitSizesOuterWidth, 3, windowOuterMask);
-			for (auto& wWindow : *segment->children["Window"])
+			else if (level->coordSys.type == CoordSysType::cylindrical)
 			{
-				wWindow->subdivide(2, splitOuterNames, splitPolicies, splitSizesOuterHeight, 3, windowOuterMask);
-				for (auto& window : *wWindow->children["Window"])
-				{ 
-					window->boundsExpand(frameExpansion);
-					window->subdivide(1, splitInnerNames, splitPolicies, splitSizesInnerWidth, 3);
-					for (auto& space : *window->children["Space"])
+				for (architecture::Shape* cylinderSegment : *level->children["Native Segment"])
+				{
+					cylinderSegment->wrapCartesianOverCylindrical("Cartesian Segment");
+					for (auto& segment : *cylinderSegment->children["Cartesian Segment"]) segments.push_back(segment);
+				}
+			}
+			else
+			{
+				throw std::invalid_argument("Invalid coordinate system type");
+			}
+
+			SizePolicy splitPolicies[] = { SizePolicy::relative,
+										   SizePolicy::absoluteTrue,
+										   SizePolicy::relative };
+
+			std::string splitOuterNames[] = { "EMPTY", "Window", "EMPTY" };
+			float splitSizesOuterWidth[] = { 1, 4, 1 };
+			float splitSizesOuterHeight[] = { 1.5, 10, 1 };
+			glm::vec2 frameExpansion[3] = { glm::vec2(1), glm::vec2(0), glm::vec2(0) };
+			std::string splitInnerNames[] = { "Frame", "Space", "Frame" };
+			float splitSizesInnerWidth[] = { 1, 2, 1 };
+			float splitSizesInnerHeight[] = { 1.5, 8, 1 };
+			int windowOuterMask[] = { 0, 1, 0 };
+			int windowInnerMask[] = { 1, 0, 1 };
+			for (architecture::Shape* segment : segments)
+			{
+				segment->subdivide(1, splitOuterNames, splitPolicies, splitSizesOuterWidth, 3, windowOuterMask);
+				for (auto& wWindow : *segment->children["Window"])
+				{
+					wWindow->subdivide(2, splitOuterNames, splitPolicies, splitSizesOuterHeight, 3, windowOuterMask);
+					for (auto& window : *wWindow->children["Window"])
 					{
-						space->subdivide(2, splitInnerNames, splitPolicies, splitSizesInnerHeight, 3, windowInnerMask);
+						window->boundsExpand(frameExpansion);
+						window->subdivide(1, splitInnerNames, splitPolicies, splitSizesInnerWidth, 3);
+						for (auto& space : *window->children["Space"])
+						{
+							space->subdivide(2, splitInnerNames, splitPolicies, splitSizesInnerHeight, 3, windowInnerMask);
+						}
 					}
 				}
 			}
+
+			level->parentChildOp = Shape::ParentChildOperator::unite;
 		}
-		
-		wall->parentChildOp = Shape::ParentChildOperator::unite;
 	}
 
 	void castleBattlement(Shape* wall)
@@ -400,7 +399,7 @@ namespace architecture
 	{
 		if (shape != nullptr) delete shape;
 
-		if (connectors.size() == 0) shape = makeTower(origin);
+		if (connectors.size() == 0) shape = makeTower(origin, height(), radius());
 		else
 		{
 			std::vector<glm::vec3> connectorDirs(connectors.size());
@@ -411,10 +410,35 @@ namespace architecture
 				connectorWidths[i] = connectors[i].wall->width();
 			}
 
-			shape = makeTower(origin, connectorDirs.data(), connectorWidths.data(), connectors.size());
+
+			shape = makeTower(origin, connectorDirs.data(), connectorWidths.data(), connectors.size(), height(), radius());
 		}
 
 		shape->init();
+	}
+
+	void CastleTower::set_height(float newHeight)
+	{
+		height_ = newHeight;
+		init();
+		for (auto& connector : connectors)
+		{
+			if (connector.wall->height() > newHeight)
+			{
+				connector.wall->set_height(newHeight);
+				connector.wall->init();
+			}
+		}
+	}
+
+	void CastleTower::set_radius(float newRadius)
+	{
+		radius_ = newRadius;
+		init();
+		for (auto& connector : connectors)
+		{
+			connector.wall->init();
+		}
 	}
 
 	void CastleTower::move(glm::vec3 movement)
@@ -435,13 +459,29 @@ namespace architecture
 	{
 	}
 
+	void ConnectingCastleWall::set_height(float newHeight)
+	{
+		height_ = newHeight;
+		init();
+		if (node1->height() < newHeight)
+		{
+			node1->set_height(std::max(node1->height(), newHeight));
+			node1->init();
+		}
+		if (node2->height() < newHeight)
+		{
+			node2->set_height(std::max(node2->height(), newHeight));
+			node2->init();
+		}
+	}
+
 	void ConnectingCastleWall::init()
 	{
 		if (shape != nullptr) delete shape;
 
 		float wallBuffer1 = sqrt(node1->radius() * node1->radius() - width() * width() / 4);
 		float wallBuffer2 = sqrt(node2->radius() * node2->radius() - width() * width() / 4);
-		shape = makeWall(node1->origin + wallBuffer1 * glm::normalize(node2->origin - node1->origin), node2->origin - wallBuffer2 * glm::normalize(node2->origin - node1->origin));
+		shape = makeWall(node1->origin + wallBuffer1 * glm::normalize(node2->origin - node1->origin), node2->origin - wallBuffer2 * glm::normalize(node2->origin - node1->origin), height());
 
 		shape->init();
 	}

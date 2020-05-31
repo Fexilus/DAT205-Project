@@ -141,6 +141,9 @@ architecture::Shape* isectRects;
 uint booleanTestId;
 mat4 booleanTestModelMatrix(1);
 
+architecture::CastleHeightMixin* pickedObjectHeightable = 0;
+architecture::CastleRadiusMixin* pickedObjectRadiusable = 0;
+
 void loadShaders(bool is_reload)
 {
 	GLuint shader = labhelper::loadShaderProgram("../project/simple.vert", "../project/simple.frag", is_reload);
@@ -578,6 +581,20 @@ bool handleEvents(void)
 				vec2 pickedScreenCoords = vec2(g_prevMouseCoords.x, windowHeight - 1.0f - g_prevMouseCoords.y);
 				pickedModelCoord = glm::unProject(vec3(pickedScreenCoords, pickedDepth), viewMatrix, projMatrix, viewport);
 				g_isMouseDraggingLeft = true;
+
+				// Handle variables for gui
+
+				auto& pickedObject = proceduralObjects.find(pickedID);
+				if (pickedObject != proceduralObjects.end())
+				{
+					pickedObjectHeightable = dynamic_cast<architecture::CastleHeightMixin*>(pickedObject->second);
+					pickedObjectRadiusable = dynamic_cast<architecture::CastleRadiusMixin*>(pickedObject->second);
+				}
+				else
+				{
+					pickedObjectHeightable = 0;
+					pickedObjectRadiusable = 0;
+				}
 			}
 		}
 
@@ -718,7 +735,7 @@ void gui()
 		ImGui::Text("Picked movement: (%f, %f, %f)", pickedMovement.x, pickedMovement.y, pickedMovement.z);
 	}
 
-	if (ImGui::CollapsingHeader("Boolean operations", ImGuiTreeNodeFlags_Framed + ImGuiTreeNodeFlags_DefaultOpen))
+	if (ImGui::CollapsingHeader("Boolean operations", ImGuiTreeNodeFlags_Framed))
 	{
 		if (ImGui::Checkbox("Draw wireframe", &drawWireframe))
 		{
@@ -726,6 +743,26 @@ void gui()
 			else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 		
+	}
+
+	if (ImGui::CollapsingHeader("Live editing", ImGuiTreeNodeFlags_Framed + ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		if (pickedObjectHeightable)
+		{
+			float height = pickedObjectHeightable->height();
+			if (ImGui::SliderFloat("Height", &height, 20, 100))
+			{
+				pickedObjectHeightable->set_height(height);
+			}
+		}
+		if (pickedObjectRadiusable)
+		{
+			float radius = pickedObjectRadiusable->radius();
+			if (ImGui::SliderFloat("Radius", &radius, 20, 70))
+			{
+				pickedObjectRadiusable->set_radius(radius);
+			}
+		}
 	}
 
 	// Reload shaders
