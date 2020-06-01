@@ -465,12 +465,12 @@ namespace architecture
 		init();
 		if (node1->height() < newHeight)
 		{
-			node1->set_height(std::max(node1->height(), newHeight));
+			node1->set_height(newHeight);
 			node1->init();
 		}
 		if (node2->height() < newHeight)
 		{
-			node2->set_height(std::max(node2->height(), newHeight));
+			node2->set_height(newHeight);
 			node2->init();
 		}
 	}

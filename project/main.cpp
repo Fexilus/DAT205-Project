@@ -130,19 +130,10 @@ FboInfo finalFB;
 
 vec3 pickedMovement(0);
 
-///////////////////////////////////////////////////////////////////////////////
-// Boolean operations
-///////////////////////////////////////////////////////////////////////////////
-bool drawWireframe = false;
-architecture::Shape* intersectShape;
-architecture::Shape* isectRect1;
-architecture::Shape* isectRect2;
-architecture::Shape* isectRects;
-uint booleanTestId;
-mat4 booleanTestModelMatrix(1);
-
 architecture::CastleHeightMixin* pickedObjectHeightable = 0;
 architecture::CastleRadiusMixin* pickedObjectRadiusable = 0;
+
+bool drawWireframe = false;
 
 void loadShaders(bool is_reload)
 {
@@ -208,23 +199,6 @@ void generateGeometry()
 	intersectShape->childChildOp = architecture::Shape::ChildChildOperator::intersect;
 	intersectShape->init();
 	*/
-	architecture::CoordSys isectRect1CoordSys = { architecture::CoordSysType::cartesian, vec3(-60,0,50), { glm::vec3(0,0,1), glm::vec3(1,0,0), glm::vec3(0,1,0) } };
-	architecture::CoordSys isectRect2CoordSys = { architecture::CoordSysType::cartesian, vec3(-73,-5,55), { normalize(glm::vec3(1,0,1)), cross(glm::vec3(0,1,0), normalize(glm::vec3(1,0,1))), glm::vec3(0,1,0) } };
-
-	glm::vec2 isectRectBounds[3] = { glm::vec2(0, 10),
-									 glm::vec2(0, 10),
-									 glm::vec2(0, 15) };
-	isectRect1 = new architecture::Shape(isectRect1CoordSys, isectRectBounds);
-	isectRect2 = new architecture::Shape(isectRect2CoordSys, isectRectBounds);
-	//isectRect1->init();
-	//isectRect2->init();
-	isectRects = new architecture::Shape(isectRect1CoordSys, isectRectBounds);
-	isectRects->children["Isects"] = new std::vector<architecture::Shape*>();
-	isectRects->children["Isects"]->push_back(isectRect1);
-	isectRects->children["Isects"]->push_back(isectRect2);
-	isectRects->childChildOp = architecture::Shape::ChildChildOperator::intersect;
-	isectRects->init();
-	booleanTestId = proceduralFreeId++;
 }
 
 void initGL()
@@ -378,20 +352,6 @@ void drawScene(GLuint currentShaderProgram,
 
 		object.second->render();
 	}
-
-	// Booleantest
-	//intersectShape->render();
-	//isectRect1->render();
-	//isectRect2->render();
-	labhelper::setUniformSlow(currentShaderProgram, "objectId", booleanTestId);
-	mat4 tempModelMatrix = booleanTestId == pickedID && g_isMouseDraggingLeft ? translate(pickedMovement) : mat4(1.0f);
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
-		projectionMatrix * viewMatrix * booleanTestModelMatrix * tempModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix",
-		viewMatrix * booleanTestModelMatrix * tempModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
-		inverse(transpose(viewMatrix * booleanTestModelMatrix * tempModelMatrix)));
-	isectRects->render();
 }
 
 
@@ -611,10 +571,6 @@ bool handleEvents(void)
 			{
 				pickedObject->second->move(pickedMovement);
 			}
-			else if (pickedID == booleanTestId)
-			{
-				booleanTestModelMatrix *= translate(pickedMovement);
-			}
 
 			// Reset to avoid weird movement previews
 			pickedMovement = vec3(0);
@@ -735,14 +691,10 @@ void gui()
 		ImGui::Text("Picked movement: (%f, %f, %f)", pickedMovement.x, pickedMovement.y, pickedMovement.z);
 	}
 
-	if (ImGui::CollapsingHeader("Boolean operations", ImGuiTreeNodeFlags_Framed))
+	if (ImGui::Checkbox("Draw wireframe", &drawWireframe))
 	{
-		if (ImGui::Checkbox("Draw wireframe", &drawWireframe))
-		{
-			if (drawWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		}
-		
+		if (drawWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 
 	if (ImGui::CollapsingHeader("Live editing", ImGuiTreeNodeFlags_Framed + ImGuiTreeNodeFlags_DefaultOpen))

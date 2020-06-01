@@ -22,8 +22,6 @@ target_include_directories( architecture
     )
 
 target_link_libraries ( architecture
-    PUBLIC
-    boolean3d
     PRIVATE
     ${GLEW_LIBRARIES}
     )
