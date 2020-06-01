@@ -176,8 +176,8 @@ void initSsaoSamples()
 void generateGeometry()
 {
 	// Main castle walls
-	vec3 wallNodes[] = { vec3(-80,0,0), vec3(130,0,30), vec3(200,0,70), vec3(240,0,0) };
-	for (auto& object : architecture::makeWalls(wallNodes, 4))
+	vec3 wallNodes[] = { vec3(-80,0,0), vec3(130,0,30), vec3(200,0,70), vec3(240,0,0), vec3(350,0,-60), vec3(480,0,60), vec3(555,0,0), vec3(670,0,-30), vec3(790,0,150), vec3(800,0,250), vec3(790,0,365) };
+	for (auto& object : architecture::makeWalls(wallNodes, 11))
 	{
 		proceduralObjects[proceduralFreeId++] = object;
 	}
